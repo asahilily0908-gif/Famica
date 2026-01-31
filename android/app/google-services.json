@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "273365767591",
+    "project_id": "famica-9b019",
+    "storage_bucket": "famica-9b019.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:273365767591:android:93f6ae14dc4bc7e3411282",
+        "android_client_info": {
+          "package_name": "com.matsushima.famica"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCeWOZvUMFFGs4_9w6ri9XxwIEAcMIUCWE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

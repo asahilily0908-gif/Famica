@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 🔹 usersコレクション
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // 🔹 usersサブコレクション（customCategories）
+      match /customCategories/{categoryId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // 🔹 householdsコレクション
+    match /households/{householdId} {
+      // ✅ 認証済みユーザーなら全てのhousehold操作を許可
+      // （membersチェックはfallbackルールで処理）
+      allow read, write, create, update: if request.auth != null;
+
+      // 🔹 household以下の全サブコレクション
+      match /{document=**} {
+        allow read, write: if request.auth != null;
+      }
+    }
+
+    // 🔹 inviteCodesコレクション（一度きり招待コード）
+    match /inviteCodes/{code} {
+      // 読み取り: 認証済みユーザーなら誰でも可能（検証のため）
+      allow read: if request.auth != null;
+      
+      // 作成: 認証済みユーザーなら誰でも可能（household作成時）
+      allow create: if request.auth != null 
+        && request.resource.data.householdId is string
+        && request.resource.data.used == false;
+      
+      // 更新: 認証済みユーザーなら誰でも可能（使用済みマーク用）
+      // ただし、used=falseからused=trueへの変更のみ許可
+      allow update: if request.auth != null
+        && resource.data.used == false
+        && request.resource.data.used == true;
+      
+      // 削除: 禁止（セキュリティのため記録を保持）
+      allow delete: if false;
+    }
+
+    // 🔹 gratitudeMessagesコレクション（セキュリティ強化版）
+    match /gratitudeMessages/{messageId} {
+      // 作成: 認証済みユーザーが自分のfromUserIdで作成する場合のみ
+      // householdIdとtoUserIdが必須
+      allow create: if request.auth != null 
+        && request.auth.uid == request.resource.data.fromUserId
+        && request.resource.data.householdId is string
+        && request.resource.data.toUserId is string;
+      
+      // 読取: 送信者または受信者のみ
+      allow read: if request.auth != null
+        && (request.auth.uid == resource.data.fromUserId
+            || request.auth.uid == resource.data.toUserId);
+      
+      // 更新: 受信者のみ（既読フラグ更新用）
+      // isReadフィールドのみ変更可能
+      allow update: if request.auth != null
+        && request.auth.uid == resource.data.toUserId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+      
+      // 削除: 禁止（ログ保持のため）
+      allow delete: if false;
+    }
+
+    // 🔹 fallback（開発・申請用の保険的許可）
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

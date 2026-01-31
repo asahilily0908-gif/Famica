@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "KMHW463QBS.com.matsushima.famica",
+        "paths": [ "/invite/*", "/invite" ]
+      }
+    ]
+  }
+}
