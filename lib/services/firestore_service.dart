@@ -1396,7 +1396,24 @@ class FirestoreService {
     final user = _auth.currentUser;
     if (user == null) throw Exception('ユーザーが認証されていません');
 
+    final householdId = await getCurrentUserHouseholdId();
+    if (householdId == null) throw Exception('世帯IDが取得できません');
+
     try {
+      // まず、カテゴリ名を取得
+      final categoryDoc = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('customCategories')
+          .doc(categoryId)
+          .get();
+
+      String? categoryName;
+      if (categoryDoc.exists) {
+        categoryName = categoryDoc.data()?['name'] as String?;
+      }
+
+      // カスタムカテゴリを削除
       await _firestore
           .collection('users')
           .doc(user.uid)
@@ -1404,7 +1421,25 @@ class FirestoreService {
           .doc(categoryId)
           .delete();
 
-      print('✅ カスタムカテゴリ削除: $categoryId');
+      print('✅ カスタムカテゴリ削除: $categoryId (name: $categoryName)');
+
+      // そのカテゴリに紐づくすべてのrecordsを削除
+      if (categoryName != null && categoryName.isNotEmpty) {
+        final recordsSnapshot = await _firestore
+            .collection('households')
+            .doc(householdId)
+            .collection('records')
+            .where('category', isEqualTo: categoryName)
+            .get();
+
+        final batch = _firestore.batch();
+        for (var doc in recordsSnapshot.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+
+        print('✅ カテゴリ「$categoryName」に紐づく${recordsSnapshot.docs.length}件のレコードを削除しました');
+      }
     } catch (e) {
       print('❌ カスタムカテゴリ削除エラー: $e');
       rethrow;
