@@ -59,7 +59,7 @@ class _CategoryCustomizeScreenState extends State<CategoryCustomizeScreen> {
           : _categories.isEmpty
               ? _buildEmptyState()
               : ReorderableListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   itemCount: _categories.length,
                   onReorder: _onReorder,
                   itemBuilder: (context, index) {
@@ -99,7 +99,6 @@ class _CategoryCustomizeScreenState extends State<CategoryCustomizeScreen> {
 
     return Container(
       key: ValueKey(id),
-      width: MediaQuery.of(context).size.width * 0.95,
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -335,6 +334,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
     final isEdit = widget.initialName != null;
 
     return UnifiedModalContainer(
+      isDialog: true,
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,

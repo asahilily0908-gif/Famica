@@ -160,11 +160,13 @@ class UnifiedModalStyles {
 class UnifiedModalContainer extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
+  final bool isDialog; // Dialogとして使用するかどうか
 
   const UnifiedModalContainer({
     super.key,
     required this.child,
     this.padding,
+    this.isDialog = false,
   });
 
   @override
@@ -172,6 +174,36 @@ class UnifiedModalContainer extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
+    if (isDialog) {
+      // Dialog用のレイアウト
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+        child: Container(
+          width: screenWidth * 0.90,
+          constraints: BoxConstraints(
+            maxHeight: screenHeight * 0.85,
+          ),
+          decoration: BoxDecoration(
+            color: UnifiedModalStyles.modalBackground,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: padding ?? const EdgeInsets.all(24),
+            child: child,
+          ),
+        ),
+      );
+    }
+
+    // ModalBottomSheet用のレイアウト
     return Material(
       color: Colors.transparent,
       child: Center(
@@ -180,7 +212,7 @@ class UnifiedModalContainer extends StatelessWidget {
             top: Radius.circular(24),
           ),
           child: Container(
-            width: screenWidth * 0.95,
+            width: screenWidth * 0.90,
             constraints: BoxConstraints(
               maxHeight: screenHeight * 0.9,
             ),
