@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/common_context_menu.dart';
-import '../constants/famica_colors.dart';
+import '../widgets/unified_modal_styles.dart';
 import '../services/firestore_service.dart';
 
 /// ニックネーム変更画面
@@ -50,7 +50,7 @@ class _NicknameEditScreenState extends State<NicknameEditScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('ニックネームを入力してください'),
-          backgroundColor: FamicaColors.error,
+          backgroundColor: Colors.red,
         ),
       );
       return;
@@ -65,7 +65,7 @@ class _NicknameEditScreenState extends State<NicknameEditScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('✅ 変更を保存しました'),
-            backgroundColor: FamicaColors.success,
+            backgroundColor: UnifiedModalStyles.primaryPink,
             duration: Duration(seconds: 2),
           ),
         );
@@ -77,7 +77,7 @@ class _NicknameEditScreenState extends State<NicknameEditScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ エラーが発生しました: $e'),
-            backgroundColor: FamicaColors.error,
+            backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
           ),
         );
@@ -109,96 +109,42 @@ class _NicknameEditScreenState extends State<NicknameEditScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                  // ニックネームラベル
+                  const Text('ニックネーム', style: UnifiedModalStyles.labelStyle),
+                  const SizedBox(height: 12),
+                  
+                  // TextField
+                  TextField(
+                    controller: _nicknameController,
+                    decoration: UnifiedModalStyles.textFieldDecoration(
+                      hintText: 'ニックネームを入力',
+                      prefixIcon: const Icon(
+                        Icons.person,
+                        color: UnifiedModalStyles.primaryPink,
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.person, color: FamicaColors.primary),
-                            SizedBox(width: 8),
-                            Text(
-                              'ニックネーム',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        TextField(
-                          controller: _nicknameController,
-                          decoration: InputDecoration(
-                            hintText: 'ニックネームを入力',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: FamicaColors.primary,
-                                width: 2,
-                              ),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                          ),
-                          maxLength: 20,
-                          autofocus: true,
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _isSaving ? null : _saveNickname,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: FamicaColors.primary,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: _isSaving
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
-                                  )
-                                : const Text(
-                                    '変更を保存',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'ℹ️ ニックネームは全画面で即時反映されます',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
+                    maxLength: 20,
+                    autofocus: true,
+                    contextMenuBuilder: buildFamicaContextMenu,
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // 説明テキスト
+                  Text(
+                    'ℹ️ ニックネームは全画面で即時反映されます',
+                    style: UnifiedModalStyles.captionStyle,
+                  ),
+                  const SizedBox(height: 32),
+                  
+                  // 保存ボタン
+                  UnifiedSaveButton(
+                    text: '変更を保存',
+                    onPressed: _saveNickname,
+                    isLoading: _isSaving,
                   ),
                 ],
               ),

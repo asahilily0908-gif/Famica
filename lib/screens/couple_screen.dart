@@ -1369,7 +1369,7 @@ class _CoupleScreenState extends State<CoupleScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('パートナーが見つかりません'),
-              backgroundColor: FamicaColors.error,
+              backgroundColor: Colors.red,
             ),
           );
         }
@@ -1392,7 +1392,7 @@ class _CoupleScreenState extends State<CoupleScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('エラーが発生しました: $e'),
-            backgroundColor: FamicaColors.error,
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -1427,184 +1427,90 @@ class _ThanksCardDialogState extends State<_ThanksCardDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Container(
-        width: screenWidth * 0.90,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+    return UnifiedModalContainer(
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // タイトル
+            Row(
+              children: [
+                const Text(
+                  '💗',
+                  style: TextStyle(fontSize: 24),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  '感謝カードを送る',
+                  style: UnifiedModalStyles.titleStyle,
+                ),
+              ],
             ),
-          ],
-        ),
-        constraints: BoxConstraints(
-          maxHeight: screenHeight * 0.85,
-        ),
-        padding: const EdgeInsets.all(24),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // タイトル
-              const Row(
+            const SizedBox(height: 20),
+            
+            // 送り先
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: UnifiedModalStyles.primaryPink.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: UnifiedModalStyles.pinkBorder.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
                 children: [
-                  Text(
-                    '💗',
-                    style: TextStyle(fontSize: 24),
+                  const Text(
+                    '送り先：',
+                    style: UnifiedModalStyles.labelStyle,
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text(
-                    '感謝カードを送る',
-                    style: TextStyle(
-                      fontSize: 20,
+                    widget.partnerName,
+                    style: const TextStyle(
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: FamicaColors.textDark,
+                      color: UnifiedModalStyles.primaryPink,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
-              
-              // 送り先
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: FamicaColors.accent.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(12),
+            ),
+            const SizedBox(height: 20),
+            
+            // メッセージ入力
+            const Text(
+              'メッセージ',
+              style: UnifiedModalStyles.labelStyle,
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 120,
+              child: TextField(
+                controller: _messageController,
+                maxLines: null,
+                expands: true,
+                maxLength: 100,
+                textAlignVertical: TextAlignVertical.top,
+                decoration: UnifiedModalStyles.textFieldDecoration(
+                  hintText: '例：いつも洗い物してくれてありがとう😊',
                 ),
-                child: Row(
-                  children: [
-                    const Text(
-                      '送り先：',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      widget.partnerName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: FamicaColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
+                contextMenuBuilder: buildFamicaContextMenu,
               ),
-              const SizedBox(height: 20),
-              
-              // メッセージ入力
-              const Text(
-                'メッセージ',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF555555),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 120,
-                child: TextField(
-                  controller: _messageController,
-                  maxLines: null,
-                  expands: true,
-                  maxLength: 100,
-                  textAlignVertical: TextAlignVertical.top,
-                  decoration: InputDecoration(
-                    hintText: '例：いつも洗い物してくれてありがとう😊',
-                    hintStyle: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 14,
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Color(0xFFFF8FBF), width: 2),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Color(0xFFFF8FBF), width: 2),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: FamicaColors.primary, width: 2),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  ),
-                  contextMenuBuilder: buildFamicaContextMenu,
-                ),
-              ),
-              const SizedBox(height: 32),
-              
-              // 送信ボタン
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isSending ? null : _sendThanksCard,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: FamicaColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isSending
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Text(
-                          '送信',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: _isSending ? null : () => Navigator.pop(context),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: const Text(
-                    'キャンセル',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFF999999),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 32),
+            
+            // 送信ボタン
+            UnifiedSaveButton(
+              text: '送信',
+              onPressed: _sendThanksCard,
+              isLoading: _isSending,
+            ),
+            const SizedBox(height: 12),
+            UnifiedCancelButton(),
+          ],
         ),
       ),
     );
@@ -1617,7 +1523,7 @@ class _ThanksCardDialogState extends State<_ThanksCardDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('メッセージを入力してください'),
-          backgroundColor: FamicaColors.error,
+          backgroundColor: Colors.red,
         ),
       );
       return;
@@ -1642,59 +1548,20 @@ class _ThanksCardDialogState extends State<_ThanksCardDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('💗 感謝を送信しました'),
-            backgroundColor: FamicaColors.success,
+            content: Text('💌 感謝カードを送信しました'),
+            backgroundColor: UnifiedModalStyles.primaryPink,
+            duration: Duration(seconds: 2),
           ),
         );
       }
-    } on FirebaseException catch (e) {
-      // FirebaseExceptionの場合、permission-deniedを特別扱い
-      if (mounted) {
-        setState(() => _isSending = false);
-        
-        if (e.code == 'permission-denied') {
-          // 古いアプリバージョンの場合
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Row(
-                children: [
-                  Icon(Icons.info_outline, color: FamicaColors.primary),
-                  SizedBox(width: 8),
-                  Text('アプリの更新が必要です'),
-                ],
-              ),
-              content: const Text(
-                'この機能を使用するには、最新バージョンのアプリが必要です。\n\nApp Store / Google Playから最新版に更新してください。',
-                style: TextStyle(fontSize: 14, height: 1.5),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('閉じる'),
-                ),
-              ],
-            ),
-          );
-        } else {
-          // その他のFirebaseエラー（ネットワークエラー等）
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('送信に失敗しました。時間をおいて再度お試しください。'),
-              backgroundColor: FamicaColors.error,
-              duration: Duration(seconds: 4),
-            ),
-          );
-        }
-      }
     } catch (e) {
-      // その他の一般的なエラー
+      debugPrint('❌ [Gratitude] 送信エラー: $e');
+      setState(() => _isSending = false);
       if (mounted) {
-        setState(() => _isSending = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('エラーが発生しました: $e'),
-            backgroundColor: FamicaColors.error,
+            content: Text('送信に失敗しました: $e'),
+            backgroundColor: Colors.red,
           ),
         );
       }
