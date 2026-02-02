@@ -12,6 +12,15 @@ class BannerAdWidget extends StatefulWidget {
 }
 
 class _BannerAdWidgetState extends State<BannerAdWidget> {
+  // iOS AdMob 設定
+  static const String _iosAppId = 'ca-app-pub-3184270565267183~8340379507';
+  static const String _iosBannerAdUnitIdProd = 'ca-app-pub-3184270565267183/7433426282';
+  static const String _iosBannerAdUnitIdTest = 'ca-app-pub-3940256099942544/2934735716';
+  
+  // Android AdMob 設定（参考用 - 変更しない）
+  static const String _androidBannerAdUnitIdProd = 'ca-app-pub-3184270565267183/5633035433';
+  static const String _androidBannerAdUnitIdTest = 'ca-app-pub-3940256099942544/6300978111';
+
   BannerAd? _bannerAd;
   bool _isAdLoaded = false;
   String? _errorMessage;
@@ -29,28 +38,36 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   }
 
   Future<void> _loadAd() async {
-    print('🔷 [BannerAd] 広告読み込み開始');
-    print('   プラットフォーム: ${Platform.isIOS ? "iOS" : "Android"}');
+    // ビルドモードに応じて自動切り替え
+    // Debug/Profile: テスト広告、Release: 本番広告
+    final bool useTestAds = kDebugMode || kProfileMode;
     
-    // テストモード制御: const USE_TEST_ADS = true; にするとテスト広告を使用
-    const bool USE_TEST_ADS = false;
+    // プラットフォーム判定
+    final bool isIOS = Platform.isIOS;
     
+    // 広告ユニットIDを決定
     String adUnitId;
-    if (USE_TEST_ADS) {
-      // Googleの公式テスト広告ID
-      adUnitId = Platform.isIOS
-          ? 'ca-app-pub-3940256099942544/2934735716' // iOS テスト
-          : 'ca-app-pub-3940256099942544/6300978111'; // Android テスト
-      print('   ⚠️ テストモード: テスト広告IDを使用');
+    if (isIOS) {
+      adUnitId = useTestAds ? _iosBannerAdUnitIdTest : _iosBannerAdUnitIdProd;
     } else {
-      // 本番広告ID
-      adUnitId = Platform.isIOS
-          ? 'ca-app-pub-3184270565267183/7433426282' // iOS 本番
-          : 'ca-app-pub-3184270565267183/5633035433'; // Android 本番
-      print('   本番モード: 本番広告IDを使用');
+      adUnitId = useTestAds ? _androidBannerAdUnitIdTest : _androidBannerAdUnitIdProd;
     }
     
-    print('   広告ユニットID: $adUnitId');
+    // ログ出力（要件準拠）
+    print('🔷 [BannerAd] 広告読み込み開始');
+    print('   プラットフォーム: ${isIOS ? "iOS" : "Android"}');
+    print('   ビルドモード: ${kReleaseMode ? "Release" : (kProfileMode ? "Profile" : "Debug")}');
+    print('   テスト広告使用: ${useTestAds ? "はい" : "いいえ"}');
+    
+    if (isIOS) {
+      print('   iOS App ID: $_iosAppId');
+    }
+    
+    // セキュリティのため、adUnitId の最初20文字のみ表示
+    final String adUnitIdPreview = adUnitId.length > 20 
+        ? '${adUnitId.substring(0, 20)}...' 
+        : adUnitId;
+    print('   広告ユニットID: $adUnitIdPreview');
 
     _bannerAd = BannerAd(
       adUnitId: adUnitId,
@@ -77,7 +94,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
           print('   レスポンス情報: ${error.responseInfo}');
           
           // エラー原因の診断
-          _diagnoseError(error);
+          _diagnoseError(error, isIOS);
           
           if (mounted) {
             setState(() {
@@ -103,14 +120,17 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   }
 
   /// エラーの原因を診断して出力
-  void _diagnoseError(LoadAdError error) {
+  void _diagnoseError(LoadAdError error, bool isIOS) {
     switch (error.code) {
       case 0: // ERROR_CODE_INTERNAL_ERROR
         print('💡 診断: 内部エラー。AdMobサーバー側の一時的な問題の可能性があります。');
         break;
       case 1: // ERROR_CODE_INVALID_REQUEST
         print('💡 診断: 無効なリクエスト。広告ユニットIDが正しいか確認してください。');
-        print('   現在の広告ユニットID: ${_bannerAd?.adUnitId}');
+        final String? currentAdUnitId = _bannerAd?.adUnitId;
+        if (currentAdUnitId != null && currentAdUnitId.length > 20) {
+          print('   現在の広告ユニットID: ${currentAdUnitId.substring(0, 20)}...');
+        }
         break;
       case 2: // ERROR_CODE_NETWORK_ERROR
         print('💡 診断: ネットワークエラー。インターネット接続を確認してください。');
@@ -125,9 +145,10 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
     }
     
     // iOS特有の問題チェック
-    if (Platform.isIOS) {
+    if (isIOS) {
       print('📱 iOS特有のチェック:');
-      print('   - Info.plistにGADApplicationIdentifierが設定されているか確認');
+      print('   - Info.plistにGADApplicationIdentifier ($_iosAppId) が設定されているか確認');
+      print('   - 広告ユニットIDが同じPublisher ID (ca-app-pub-3184270565267183) であるか確認');
       print('   - ATT（App Tracking Transparency）の権限が許可されているか確認');
       print('   - SKAdNetworkItemsが設定されているか確認');
     }
