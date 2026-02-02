@@ -1428,6 +1428,7 @@ class _ThanksCardDialogState extends State<_ThanksCardDialog> {
   @override
   Widget build(BuildContext context) {
     return UnifiedModalContainer(
+      isDialog: true,
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
