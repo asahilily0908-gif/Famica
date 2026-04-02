@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import '../constants/famica_colors.dart';
+import '../l10n/app_localizations.dart';
 import '../screens/family_invite_screen.dart';
 
 class PartnerInviteCard extends StatelessWidget {
@@ -10,6 +11,7 @@ class PartnerInviteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -48,7 +50,7 @@ class PartnerInviteCard extends StatelessWidget {
           
           // タイトル
           Text(
-            'パートナーを招待して、\nふたりの記録を見える化しよう',
+            l.invitePartnerCardTitle,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -61,7 +63,7 @@ class PartnerInviteCard extends StatelessWidget {
           
           // 説明
           Text(
-            '招待リンクを送るだけで、共有が始まります',
+            l.invitePartnerCardDesc,
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[600],
@@ -92,14 +94,14 @@ class PartnerInviteCard extends StatelessWidget {
                 ),
                 elevation: 0,
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.person_add, size: 20),
-                  SizedBox(width: 8),
+                  const Icon(Icons.person_add, size: 20),
+                  const SizedBox(width: 8),
                   Text(
-                    '招待リンクを共有',
-                    style: TextStyle(
+                    l.invitePartnerCardButton,
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                     ),

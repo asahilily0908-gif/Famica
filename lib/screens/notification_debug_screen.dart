@@ -3,8 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:io';
 import '../constants/famica_colors.dart';
+import 'dart:io';
 
 /// Notification Debug Screen (DEBUG ONLY)
 /// 
@@ -292,39 +292,42 @@ class _NotificationDebugScreenState extends State<NotificationDebugScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Notification Debug'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildInfoCard(),
-                const SizedBox(height: 16),
-                _buildApnsCard(),
-                const SizedBox(height: 16),
-                _buildFcmCard(),
-                const SizedBox(height: 16),
-                _buildActionsCard(),
-                const SizedBox(height: 24),
-                if (_lastRefresh != null)
-                  Center(
-                    child: Text(
-                      '最終更新: ${_formatTimestamp(_lastRefresh!)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
+    return Container(
+      decoration: const BoxDecoration(gradient: FamicaColors.appBackgroundGradient),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: const Text('Notification Debug'),
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.black,
+          elevation: 0,
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _buildInfoCard(),
+                  const SizedBox(height: 16),
+                  _buildApnsCard(),
+                  const SizedBox(height: 16),
+                  _buildFcmCard(),
+                  const SizedBox(height: 16),
+                  _buildActionsCard(),
+                  const SizedBox(height: 24),
+                  if (_lastRefresh != null)
+                    Center(
+                      child: Text(
+                        '最終更新: ${_formatTimestamp(_lastRefresh!)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            ),
+                ],
+              ),
+      ),
     );
   }
 

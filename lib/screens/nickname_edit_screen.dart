@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
+import '../constants/famica_colors.dart';
 import '../widgets/common_context_menu.dart';
 import '../widgets/unified_modal_styles.dart';
 import '../services/firestore_service.dart';
@@ -17,6 +19,8 @@ class _NicknameEditScreenState extends State<NicknameEditScreen> {
   bool _isSaving = false;
   bool _isLoading = true;
 
+  AppLocalizations get l => AppLocalizations.of(context)!;
+
   @override
   void initState() {
     super.initState();
@@ -31,7 +35,7 @@ class _NicknameEditScreenState extends State<NicknameEditScreen> {
 
   Future<void> _loadNickname() async {
     setState(() => _isLoading = true);
-    
+
     final nickname = await _firestoreService.getMyNickname();
     if (nickname != null && mounted) {
       setState(() {
@@ -45,11 +49,11 @@ class _NicknameEditScreenState extends State<NicknameEditScreen> {
 
   Future<void> _saveNickname() async {
     final nickname = _nicknameController.text.trim();
-    
+
     if (nickname.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('ニックネームを入力してください'),
+        SnackBar(
+          content: Text(l.nicknameEmpty),
           backgroundColor: Colors.red,
         ),
       );
@@ -60,13 +64,13 @@ class _NicknameEditScreenState extends State<NicknameEditScreen> {
 
     try {
       await _firestoreService.updateMyNickname(nickname);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ 変更を保存しました'),
+          SnackBar(
+            content: Text(l.nicknameSaved),
             backgroundColor: UnifiedModalStyles.primaryPink,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
         // 保存成功後、前の画面に戻る
@@ -76,7 +80,7 @@ class _NicknameEditScreenState extends State<NicknameEditScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ エラーが発生しました: $e'),
+            content: Text('${l.settingsNicknameError}: $e'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
           ),
@@ -91,64 +95,67 @@ class _NicknameEditScreenState extends State<NicknameEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'ニックネーム変更',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+    return Container(
+      decoration: const BoxDecoration(gradient: FamicaColors.appBackgroundGradient),
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            l.nicknameChangeTitle,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
+          backgroundColor: Colors.transparent,
+          centerTitle: true,
+          elevation: 0,
+          foregroundColor: Colors.black,
         ),
-        backgroundColor: Colors.white,
-        centerTitle: true,
-        elevation: 0,
-        foregroundColor: Colors.black,
-      ),
-      backgroundColor: Colors.white,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ニックネームラベル
-                  const Text('ニックネーム', style: UnifiedModalStyles.labelStyle),
-                  const SizedBox(height: 12),
-                  
-                  // TextField
-                  TextField(
-                    controller: _nicknameController,
-                    decoration: UnifiedModalStyles.textFieldDecoration(
-                      hintText: 'ニックネームを入力',
-                      prefixIcon: const Icon(
-                        Icons.person,
-                        color: UnifiedModalStyles.primaryPink,
+        backgroundColor: Colors.transparent,
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ニックネームラベル
+                    Text(l.nicknameLabel, style: UnifiedModalStyles.labelStyle),
+                    const SizedBox(height: 12),
+
+                    // TextField
+                    TextField(
+                      controller: _nicknameController,
+                      decoration: UnifiedModalStyles.textFieldDecoration(
+                        hintText: l.nicknameInputHint,
+                        prefixIcon: const Icon(
+                          Icons.person,
+                          color: UnifiedModalStyles.primaryPink,
+                        ),
                       ),
+                      maxLength: 20,
+                      autofocus: true,
+                      contextMenuBuilder: buildFamicaContextMenu,
                     ),
-                    maxLength: 20,
-                    autofocus: true,
-                    contextMenuBuilder: buildFamicaContextMenu,
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  // 説明テキスト
-                  Text(
-                    'ℹ️ ニックネームは全画面で即時反映されます',
+                    const SizedBox(height: 12),
+
+                    // 説明テキスト
+                    Text(
+                    l.nicknameNote,
                     style: UnifiedModalStyles.captionStyle,
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // 保存ボタン
                   UnifiedSaveButton(
-                    text: '変更を保存',
+                    text: l.settingsSaveChanges,
                     onPressed: _saveNickname,
                     isLoading: _isSaving,
                   ),
                 ],
               ),
             ),
+      ),
     );
   }
 }

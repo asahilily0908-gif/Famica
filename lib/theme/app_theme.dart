@@ -28,15 +28,25 @@ class AppTheme {
   
   static List<BoxShadow> get cardShadow => [
     BoxShadow(
-      color: Colors.black.withOpacity(0.04),
-      blurRadius: 20,
-      offset: const Offset(0, 6),
+      color: const Color(0x0AFF75B2),
+      blurRadius: 24,
+      offset: const Offset(0, 8),
+    ),
+    BoxShadow(
+      color: Colors.black.withOpacity(0.06),
+      blurRadius: 16,
+      offset: const Offset(0, 4),
     ),
   ];
-  
+
   static List<BoxShadow> get lightShadow => [
     BoxShadow(
-      color: Colors.black.withOpacity(0.02),
+      color: const Color(0x08FF75B2),
+      blurRadius: 16,
+      offset: const Offset(0, 4),
+    ),
+    BoxShadow(
+      color: Colors.black.withOpacity(0.03),
       blurRadius: 12,
       offset: const Offset(0, 3),
     ),
@@ -62,8 +72,8 @@ class AppTheme {
         outline: lineColor,
       ),
       
-      // Scaffold背景色
-      scaffoldBackgroundColor: white,
+      // Scaffold背景色（グラデーション背景を透過させるため透明）
+      scaffoldBackgroundColor: Colors.transparent,
       
       // Canvas色
       canvasColor: white,
@@ -179,9 +189,9 @@ class AppTheme {
         space: 1,
       ),
       
-      // Bottom Navigation Bar
+      // Bottom Navigation Bar（カスタムナビバーで置き換えるため透明）
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: white,
+        backgroundColor: Colors.transparent,
         selectedItemColor: primaryPink,
         unselectedItemColor: textSub,
         selectedLabelStyle: TextStyle(

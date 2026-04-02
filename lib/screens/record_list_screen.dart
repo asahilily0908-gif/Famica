@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import '../l10n/app_localizations.dart';
 import '../services/firestore_service.dart';
 import '../constants/famica_colors.dart';
 
 /// Famica v3.0 記録一覧画面
 class RecordListScreen extends StatefulWidget {
   final bool showAllRecords;
-  
+
   const RecordListScreen({
     super.key,
     this.showAllRecords = false,
@@ -24,27 +25,28 @@ class _RecordListScreenState extends State<RecordListScreen> {
   List<String> _availableMonths = [];
   bool _showAll = false;
 
+  AppLocalizations get l => AppLocalizations.of(context)!;
+
   @override
   void initState() {
     super.initState();
     _showAll = widget.showAllRecords;
-    _generateMonthList();
   }
 
   void _generateMonthList() {
     final now = DateTime.now();
-    final months = <String>['すべて']; // 「すべて」オプションを追加
-    
+    final months = <String>[l.all]; // 「すべて」オプションを追加
+
     // 過去12ヶ月分の月を生成
     for (int i = 0; i < 12; i++) {
       final month = DateTime(now.year, now.month - i, 1);
       months.add(DateFormat('yyyy-MM').format(month));
     }
-    
+
     setState(() {
       _availableMonths = months;
       if (_showAll) {
-        _selectedMonth = 'すべて';
+        _selectedMonth = l.all;
       }
     });
   }
@@ -55,24 +57,32 @@ class _RecordListScreenState extends State<RecordListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Generate month list here so l is available
+    if (_availableMonths.isEmpty) {
+      _generateMonthList();
+    }
+
     final user = FirebaseAuth.instance.currentUser;
-    
+
     if (user == null) {
-      return const Scaffold(
-        body: Center(child: Text('ログインが必要です')),
+      return Scaffold(
+        body: Center(child: Text(l.recordListLoginRequired)),
       );
     }
 
-    return Scaffold(
+    return Container(
+      decoration: const BoxDecoration(gradient: FamicaColors.appBackgroundGradient),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text(
-          '記録一覧',
-          style: TextStyle(
+        title: Text(
+          l.recordListTitle,
+          style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         centerTitle: true,
         elevation: 0,
         foregroundColor: Colors.black,
@@ -80,7 +90,7 @@ class _RecordListScreenState extends State<RecordListScreen> {
           IconButton(
             onPressed: _signOut,
             icon: const Icon(Icons.logout),
-            tooltip: 'ログアウト',
+            tooltip: l.logout,
           ),
         ],
       ),
@@ -128,11 +138,11 @@ class _RecordListScreenState extends State<RecordListScreen> {
               ),
             ),
           ),
-          
+
           // サマリーとリスト
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: _selectedMonth == 'すべて'
+              stream: _selectedMonth == l.all
                   ? _firestoreService.getAllRecords()
                   : _firestoreService.getMonthlyRecords(_selectedMonth),
               builder: (context, recordsSnapshot) {
@@ -143,7 +153,7 @@ class _RecordListScreenState extends State<RecordListScreen> {
                       children: [
                         Icon(Icons.error, size: 64, color: FamicaColors.error),
                         const SizedBox(height: 16),
-                        Text('エラー: ${recordsSnapshot.error}'),
+                        Text(l.errorWithMessage(recordsSnapshot.error.toString())),
                       ],
                     ),
                   );
@@ -174,7 +184,7 @@ class _RecordListScreenState extends State<RecordListScreen> {
 
                     if (costsSnapshot.hasData) {
                       final costs = costsSnapshot.data?.docs ?? [];
-                      
+
                       // 選択された月でフィルタリング
                       for (var doc in costs) {
                         final data = doc.data() as Map<String, dynamic>;
@@ -182,7 +192,7 @@ class _RecordListScreenState extends State<RecordListScreen> {
                         final amount = data['amount'] as int? ?? 0;
 
                         // 「すべて」または選択された月に一致する場合
-                        if (_selectedMonth == 'すべて' || month == _selectedMonth) {
+                        if (_selectedMonth == l.all || month == _selectedMonth) {
                           totalCost += amount;
                         }
                       }
@@ -201,6 +211,7 @@ class _RecordListScreenState extends State<RecordListScreen> {
           Navigator.pop(context);
         },
         child: const Icon(Icons.add),
+      ),
       ),
     );
   }
@@ -222,8 +233,8 @@ class _RecordListScreenState extends State<RecordListScreen> {
                     child: Column(
                       children: [
                         Icon(
-                          Icons.access_time, 
-                          size: 32, 
+                          Icons.access_time,
+                          size: 32,
                           color: FamicaColors.accent,
                         ),
                         const SizedBox(height: 8),
@@ -236,7 +247,7 @@ class _RecordListScreenState extends State<RecordListScreen> {
                           ),
                         ),
                         Text(
-                          '($totalMinutes分)',
+                          l.recordListTotalMinutes(totalMinutes),
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey[700],
@@ -254,8 +265,8 @@ class _RecordListScreenState extends State<RecordListScreen> {
                     child: Column(
                       children: [
                         Icon(
-                          Icons.attach_money, 
-                          size: 32, 
+                          Icons.attach_money,
+                          size: 32,
                           color: FamicaColors.thanks,
                         ),
                         const SizedBox(height: 8),
@@ -268,7 +279,7 @@ class _RecordListScreenState extends State<RecordListScreen> {
                           ),
                         ),
                         Text(
-                          '総コスト',
+                          l.recordListTotalCost,
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey[700],
@@ -295,7 +306,7 @@ class _RecordListScreenState extends State<RecordListScreen> {
                       Icon(Icons.inbox, size: 64, color: Colors.grey[400]),
                       const SizedBox(height: 16),
                       Text(
-                        '記録がありません',
+                        l.recordListNoRecords,
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.grey[600],
@@ -310,7 +321,7 @@ class _RecordListScreenState extends State<RecordListScreen> {
                   itemBuilder: (context, index) {
                     final doc = records[index];
                     final data = doc.data() as Map<String, dynamic>;
-                    
+
                     final category = data['category'] as String? ?? '';
                     final task = data['task'] as String? ?? '';
                     final timeMinutes = data['timeMinutes'] as int? ?? 0;
@@ -319,7 +330,7 @@ class _RecordListScreenState extends State<RecordListScreen> {
                     final memberName = data['memberName'] as String? ?? '';
                     final createdAt = data['createdAt'] as Timestamp?;
                     final thankedBy = List<String>.from(data['thankedBy'] ?? []);
-                    
+
                     String dateStr = '';
                     if (createdAt != null) {
                       dateStr = DateFormat('yyyy/MM/dd HH:mm').format(

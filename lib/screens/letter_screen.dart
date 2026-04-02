@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../constants/famica_colors.dart';
 import '../widgets/famica_header.dart';
+import '../l10n/app_localizations.dart';
 
 /// 💌 手紙ページ（貰った感謝メッセージ一覧）
 class LetterScreen extends StatefulWidget {
@@ -15,71 +16,79 @@ class LetterScreen extends StatefulWidget {
 }
 
 class _LetterScreenState extends State<LetterScreen> {
+  AppLocalizations get l => AppLocalizations.of(context)!;
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      return Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const FamicaHeader(
-                        fontSize: 32,
-                        showSubtitle: false,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'パートナーからの感謝メッセージ',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
+      return Container(
+        decoration: const BoxDecoration(gradient: FamicaColors.appBackgroundGradient),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const FamicaHeader(
+                          fontSize: 32,
+                          showSubtitle: false,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Center(
-                  child: Text(
-                    'ログインしてください',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
+                        const SizedBox(height: 4),
+                        Text(
+                          l.letterTitle,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 20),
+                  Center(
+                    child: Text(
+                      l.letterPleaseLogin,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       );
     }
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ヘッダー
-              _buildHeader(),
-              
-              
-              const SizedBox(height: 20),
-              // メッセージ一覧
-              _buildMessagesList(user),
-              const SizedBox(height: 80), // ボトムナビゲーション用のスペース
-            ],
+    return Container(
+      decoration: const BoxDecoration(gradient: FamicaColors.appBackgroundGradient),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ヘッダー
+                _buildHeader(),
+
+
+                const SizedBox(height: 20),
+                // メッセージ一覧
+                _buildMessagesList(user),
+                const SizedBox(height: 80), // ボトムナビゲーション用のスペース
+              ],
+            ),
           ),
         ),
       ),
@@ -108,7 +117,7 @@ class _LetterScreenState extends State<LetterScreen> {
 
         if (snapshot.hasError) {
           return Center(
-            child: Text('エラーが発生しました: ${snapshot.error}'),
+            child: Text('${l.errorOccurred}: ${snapshot.error}'),
           );
         }
 
@@ -133,7 +142,7 @@ class _LetterScreenState extends State<LetterScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'まだ感謝メッセージは届いていません',
+                    l.letterNoMessages,
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey[600],
@@ -155,7 +164,7 @@ class _LetterScreenState extends State<LetterScreen> {
               final doc = messages[index];
               final data = doc.data() as Map<String, dynamic>;
               
-              final fromUserName = data['fromUserName'] as String? ?? '送信者';
+              final fromUserName = data['fromUserName'] as String? ?? l.sender;
               final message = data['message'] as String? ?? '';
               final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
               final isRead = data['isRead'] as bool? ?? false;
@@ -235,8 +244,8 @@ class _LetterScreenState extends State<LetterScreen> {
                           color: FamicaColors.primary,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Text(
-                          '未読',
+                        child: Text(
+                          l.letterUnread,
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -248,7 +257,7 @@ class _LetterScreenState extends State<LetterScreen> {
                     // 送信者名
                     Expanded(
                       child: Text(
-                        '$fromUserName さんから',
+                        l.letterFromUser(fromUserName),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -284,7 +293,7 @@ class _LetterScreenState extends State<LetterScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Text(
-                      'タップして読む',
+                      l.coupleTapToRead,
                       style: TextStyle(
                         fontSize: 12,
                         color: FamicaColors.primary.withOpacity(0.7),
@@ -319,7 +328,7 @@ class _LetterScreenState extends State<LetterScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'パートナーからの感謝メッセージ',
+            l.letterTitle,
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[600],
@@ -381,7 +390,7 @@ class _LetterScreenState extends State<LetterScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          "$fromUserNameさんから",
+                          l.letterFromUser(fromUserName),
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -444,8 +453,8 @@ class _LetterScreenState extends State<LetterScreen> {
                         elevation: 0,
                       ),
                       onPressed: () => Navigator.pop(context),
-                      child: const Text(
-                        "閉じる",
+                      child: Text(
+                        l.close,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

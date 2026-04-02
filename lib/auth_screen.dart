@@ -5,6 +5,7 @@ import 'services/firestore_service.dart';
 import 'constants/famica_colors.dart';
 import 'widgets/common_context_menu.dart';
 import 'theme/app_theme.dart';
+import 'l10n/app_localizations.dart';
 
 /// Famica v3.0 認証画面
 class AuthScreen extends StatefulWidget {
@@ -15,6 +16,8 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+  AppLocalizations get l => AppLocalizations.of(context)!;
+
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nicknameController = TextEditingController();
@@ -43,13 +46,13 @@ class _AuthScreenState extends State<AuthScreen> {
 
     // 入力チェック
     if (email.isEmpty || password.isEmpty) {
-      _showSnackBar('メールアドレスとパスワードを入力してください', isError: true);
+      _showSnackBar(l.authErrorEmptyFields, isError: true);
       return;
     }
 
     // 新規登録モードの場合はニックネームとカップル名もチェック
     if (_isSignUpMode && nickname.isEmpty) {
-      _showSnackBar('ニックネームを入力してください', isError: true);
+      _showSnackBar(l.authErrorEmptyNickname, isError: true);
       return;
     }
 
@@ -58,17 +61,17 @@ class _AuthScreenState extends State<AuthScreen> {
     
     // 招待コードがある場合はカップル名不要
     if (_isSignUpMode && !_hasInviteCode && householdName.isEmpty) {
-      _showSnackBar('カップル名を入力してください', isError: true);
+      _showSnackBar(l.authErrorEmptyHousehold, isError: true);
       return;
     }
 
     if (!_isValidEmail(email)) {
-      _showSnackBar('メールアドレスの形式が正しくありません', isError: true);
+      _showSnackBar(l.authErrorInvalidEmail, isError: true);
       return;
     }
 
     if (password.length < 6) {
-      _showSnackBar('パスワードは6文字以上で入力してください', isError: true);
+      _showSnackBar(l.authErrorWeakPassword, isError: true);
       return;
     }
 
@@ -96,23 +99,23 @@ class _AuthScreenState extends State<AuthScreen> {
           _isSignUpMode = true;
           _isLoading = false;
         });
-        _showSnackBar('アカウントが見つかりません。ニックネームを入力して新規登録してください', isError: true);
+        _showSnackBar(l.authErrorUserNotFound, isError: true);
         return;
       } else if (e.code == 'wrong-password') {
-        _showSnackBar('パスワードが間違っています', isError: true);
+        _showSnackBar(l.authErrorWrongPassword, isError: true);
       } else if (e.code == 'invalid-email') {
-        _showSnackBar('メールアドレスの形式が正しくありません', isError: true);
+        _showSnackBar(l.authErrorInvalidEmail, isError: true);
       } else if (e.code == 'user-disabled') {
-        _showSnackBar('このアカウントは無効化されています', isError: true);
+        _showSnackBar(l.authErrorDisabled, isError: true);
       } else if (e.code == 'too-many-requests') {
-        _showSnackBar('リクエストが多すぎます。しばらく待ってから再度お試しください', isError: true);
+        _showSnackBar(l.authErrorTooMany, isError: true);
       } else if (e.code == 'network-request-failed') {
-        _showSnackBar('ネットワークエラーが発生しました', isError: true);
+        _showSnackBar(l.authErrorNetwork, isError: true);
       } else {
-        _showSnackBar('ログインエラー: ${e.message}', isError: true);
+        _showSnackBar('${l.authErrorLogin}: ${e.message}', isError: true);
       }
     } catch (e) {
-      _showSnackBar('予期しないエラーが発生しました: $e', isError: true);
+      _showSnackBar('${l.authErrorUnexpected}: $e', isError: true);
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -127,7 +130,7 @@ class _AuthScreenState extends State<AuthScreen> {
       password: password,
     );
     
-    _showSnackBar('ログインに成功しました', isError: false);
+    _showSnackBar(l.authLoginSuccess, isError: false);
   }
 
   /// 招待コード経由の新規登録処理（transaction化）
@@ -166,7 +169,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
       if (householdQuery.docs.isEmpty) {
         print('⚠️ 招待コードが見つかりません: $inviteCode');
-        _showSnackBar('招待コードが見つかりません', isError: true);
+        _showSnackBar(l.authInviteNotFound, isError: true);
         setState(() => _isLoading = false);
         return;
       }
@@ -178,7 +181,7 @@ class _AuthScreenState extends State<AuthScreen> {
       final inviteActive = householdData['inviteActive'] as bool? ?? true;
       if (!inviteActive) {
         print('⚠️ 招待コードは既に使用されています: $inviteCode');
-        _showSnackBar('この招待コードは既に使用されています', isError: true);
+        _showSnackBar(l.authInviteUsed, isError: true);
         setState(() => _isLoading = false);
         return;
       }
@@ -273,14 +276,14 @@ class _AuthScreenState extends State<AuthScreen> {
         print('⚠️ Firestore確認タイムアウト（登録は完了している可能性あり）');
       }
 
-      _showSnackBar('招待コード経由での登録が完了しました！', isError: false);
+      _showSnackBar(l.authInviteSuccess, isError: false);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'email-already-in-use') {
-        _showSnackBar('このメールアドレスは既に使用されています', isError: true);
+        _showSnackBar(l.authErrorEmailInUse, isError: true);
       } else if (e.code == 'weak-password') {
-        _showSnackBar('パスワードが弱すぎます。より強力なパスワードを設定してください', isError: true);
+        _showSnackBar(l.authErrorWeakPasswordSignUp, isError: true);
       } else {
-        _showSnackBar('新規登録エラー: ${e.message}', isError: true);
+        _showSnackBar('${l.authErrorSignUp}: ${e.message}', isError: true);
       }
       rethrow;
     }
@@ -344,16 +347,16 @@ class _AuthScreenState extends State<AuthScreen> {
         print('⚠️ Firestore確認タイムアウト（登録は完了している可能性あり）');
       }
 
-      _showSnackBar('新規登録が完了しました！ようこそFamicaへ！', isError: false);
+      _showSnackBar(l.authSignUpSuccess, isError: false);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'email-already-in-use') {
-        _showSnackBar('このメールアドレスは既に使用されています', isError: true);
+        _showSnackBar(l.authErrorEmailInUse, isError: true);
       } else if (e.code == 'weak-password') {
-        _showSnackBar('パスワードが弱すぎます。より強力なパスワードを設定してください', isError: true);
+        _showSnackBar(l.authErrorWeakPasswordSignUp, isError: true);
       } else if (e.code == 'operation-not-allowed') {
-        _showSnackBar('メール/パスワード認証が有効になっていません', isError: true);
+        _showSnackBar(l.authErrorOperationNotAllowed, isError: true);
       } else {
-        _showSnackBar('新規登録エラー: ${e.message}', isError: true);
+        _showSnackBar('${l.authErrorSignUp}: ${e.message}', isError: true);
       }
       rethrow;
     }
@@ -467,7 +470,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'ふたりのがんばりを10秒で記録',
+                        l.appTagline,
                         textAlign: TextAlign.center,
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: Colors.grey[600],
@@ -478,10 +481,10 @@ class _AuthScreenState extends State<AuthScreen> {
                       // メールアドレス入力欄
                       TextField(
                         controller: _emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'メールアドレス',
-                          hintText: 'example@mail.com',
-                          prefixIcon: Icon(Icons.email),
+                        decoration: InputDecoration(
+                          labelText: l.authEmailLabel,
+                          hintText: l.authEmailHint,
+                          prefixIcon: const Icon(Icons.email),
                         ),
                         keyboardType: TextInputType.emailAddress,
                         enabled: !_isLoading,
@@ -492,10 +495,10 @@ class _AuthScreenState extends State<AuthScreen> {
                       // パスワード入力欄
                       TextField(
                         controller: _passwordController,
-                        decoration: const InputDecoration(
-                          labelText: 'パスワード',
-                          hintText: '6文字以上',
-                          prefixIcon: Icon(Icons.lock),
+                        decoration: InputDecoration(
+                          labelText: l.authPasswordLabel,
+                          hintText: l.authPasswordHint,
+                          prefixIcon: const Icon(Icons.lock),
                         ),
                         obscureText: true,
                         enabled: !_isLoading,
@@ -507,11 +510,11 @@ class _AuthScreenState extends State<AuthScreen> {
                         const SizedBox(height: 16),
                         TextField(
                           controller: _nicknameController,
-                          decoration: const InputDecoration(
-                            labelText: 'ニックネーム',
-                            hintText: '例：あさひ',
-                            prefixIcon: Icon(Icons.person),
-                            helperText: 'アプリ内で表示される名前です',
+                          decoration: InputDecoration(
+                            labelText: l.authNicknameLabel,
+                            hintText: l.authNicknameHint,
+                            prefixIcon: const Icon(Icons.person),
+                            helperText: l.authNicknameHelper,
                           ),
                           enabled: !_isLoading,
                           contextMenuBuilder: buildFamicaContextMenu,
@@ -529,7 +532,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 });
                               },
                             ),
-                            const Text('招待コードを持っています'),
+                            Text(l.authHasInviteCode),
                           ],
                         ),
                         
@@ -537,11 +540,11 @@ class _AuthScreenState extends State<AuthScreen> {
                           const SizedBox(height: 8),
                           TextField(
                             controller: _inviteCodeController,
-                            decoration: const InputDecoration(
-                              labelText: '招待コード',
-                              hintText: '例：ABC123',
-                              prefixIcon: Icon(Icons.vpn_key),
-                              helperText: 'パートナーから受け取ったコード',
+                            decoration: InputDecoration(
+                              labelText: l.authInviteCodeLabel,
+                              hintText: l.authInviteCodeHint,
+                              prefixIcon: const Icon(Icons.vpn_key),
+                              helperText: l.authInviteCodeHelper,
                             ),
                             enabled: !_isLoading,
                             textCapitalization: TextCapitalization.characters,
@@ -551,11 +554,11 @@ class _AuthScreenState extends State<AuthScreen> {
                           const SizedBox(height: 8),
                           TextField(
                             controller: _householdNameController,
-                            decoration: const InputDecoration(
-                              labelText: 'カップル名／世帯名',
-                              hintText: '例：あさひ・りり',
-                              prefixIcon: Icon(Icons.home),
-                              helperText: 'ふたりで共有するグループ名です',
+                            decoration: InputDecoration(
+                              labelText: l.authHouseholdNameLabel,
+                              hintText: l.authHouseholdNameHint,
+                              prefixIcon: const Icon(Icons.home),
+                              helperText: l.authHouseholdNameHelper,
                             ),
                             enabled: !_isLoading,
                             contextMenuBuilder: buildFamicaContextMenu,
@@ -582,7 +585,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 ),
                               )
                             : Text(
-                                _isSignUpMode ? '新規登録' : 'ログイン / 新規登録',
+                                _isSignUpMode ? l.authSignUp : l.authLoginOrSignUp,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -604,16 +607,16 @@ class _AuthScreenState extends State<AuthScreen> {
                               _inviteCodeController.clear();
                             });
                           },
-                          child: const Text('既存アカウントでログイン'),
+                          child: Text(l.authSwitchToLogin),
                         ),
                       ],
                       const SizedBox(height: 16),
 
                       // 説明文
                       Text(
-                        _isSignUpMode 
-                            ? '※ ニックネームはアプリ内で表示されます'
-                            : '※ 既存ユーザーの場合はログイン、\n新規の場合は自動で登録されます',
+                        _isSignUpMode
+                            ? l.authSignUpNote
+                            : l.authLoginNote,
                         textAlign: TextAlign.center,
                         style: AppTextStyles.caption.copyWith(
                           color: Colors.grey[600],

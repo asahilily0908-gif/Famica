@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../services/firestore_service.dart';
 import '../constants/famica_colors.dart';
 import '../widgets/common_context_menu.dart';
@@ -17,6 +18,8 @@ class _CategoryCustomizeScreenState extends State<CategoryCustomizeScreen> {
   List<Map<String, dynamic>> _categories = [];
   bool _isLoading = true;
 
+  AppLocalizations get l => AppLocalizations.of(context)!;
+
   @override
   void initState() {
     super.initState();
@@ -33,44 +36,47 @@ class _CategoryCustomizeScreenState extends State<CategoryCustomizeScreen> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      _showError('カテゴリの読み込みに失敗しました: $e');
+      _showError('${l.categoryLoadFailed}: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'カテゴリを編集',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
+    return Container(
+      decoration: const BoxDecoration(gradient: FamicaColors.appBackgroundGradient),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(
+            l.categoryEditTitle,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
           ),
+          backgroundColor: Colors.transparent,
+          centerTitle: true,
+          elevation: 0,
+          foregroundColor: Colors.black,
         ),
-        backgroundColor: Colors.white,
-        centerTitle: true,
-        elevation: 0,
-        foregroundColor: Colors.black,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _categories.isEmpty
-              ? _buildEmptyState()
-              : ReorderableListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: _categories.length,
-                  onReorder: _onReorder,
-                  itemBuilder: (context, index) {
-                    final category = _categories[index];
-                    return _buildCategoryItem(category, index);
-                  },
-                ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddDialog,
-        backgroundColor: FamicaColors.accent,
-        child: const Icon(Icons.add, color: Colors.white),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _categories.isEmpty
+                ? _buildEmptyState()
+                : ReorderableListView.builder(
+                    padding: const EdgeInsets.all(20),
+                    itemCount: _categories.length,
+                    onReorder: _onReorder,
+                    itemBuilder: (context, index) {
+                      final category = _categories[index];
+                      return _buildCategoryItem(category, index);
+                    },
+                  ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _showAddDialog,
+          backgroundColor: FamicaColors.accent,
+          child: const Icon(Icons.add, color: Colors.white),
+        ),
       ),
     );
   }
@@ -82,9 +88,9 @@ class _CategoryCustomizeScreenState extends State<CategoryCustomizeScreen> {
         children: [
           Icon(Icons.category_outlined, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
-          Text('カテゴリがありません', style: TextStyle(fontSize: 18, color: Colors.grey[600])),
+          Text(l.categoryEmpty, style: TextStyle(fontSize: 18, color: Colors.grey[600])),
           const SizedBox(height: 8),
-          Text('＋ボタンでカテゴリを追加しましょう', style: TextStyle(fontSize: 14, color: Colors.grey[500])),
+          Text(l.categoryEmptyHint, style: TextStyle(fontSize: 14, color: Colors.grey[500])),
         ],
       ),
     );
@@ -95,6 +101,9 @@ class _CategoryCustomizeScreenState extends State<CategoryCustomizeScreen> {
     final name = category['name'] as String? ?? '';
     final emoji = category['emoji'] as String? ?? '📝';
     final minutes = category['defaultMinutes'] as int? ?? 30;
+
+    // Default categories are part of app definition.
+    // They cannot be deleted by design.
     final isDefault = id.startsWith('default_');
 
     return Container(
@@ -117,7 +126,19 @@ class _CategoryCustomizeScreenState extends State<CategoryCustomizeScreen> {
           child: Center(child: Text(emoji, style: const TextStyle(fontSize: 24))),
         ),
         title: Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        subtitle: Text('$minutes分', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l.quickRecordMinutes(minutes), style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+            if (isDefault) ...[
+              const SizedBox(height: 4),
+              Text(
+                l.categoryStandardNote,
+                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+              ),
+            ],
+          ],
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -126,7 +147,8 @@ class _CategoryCustomizeScreenState extends State<CategoryCustomizeScreen> {
               color: FamicaColors.accent,
               onPressed: () => _showEditDialog(category),
             ),
-            if (_categories.length > 1)
+            // デフォルトカテゴリは削除ボタンを表示しない
+            if (!isDefault)
               IconButton(
                 icon: const Icon(Icons.delete, size: 20),
                 color: Colors.red[400],
@@ -152,17 +174,17 @@ class _CategoryCustomizeScreenState extends State<CategoryCustomizeScreen> {
       await _firestoreService.reorderCustomCategories(_categories);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('並び順を保存しました'), duration: Duration(seconds: 1)),
+          SnackBar(content: Text(l.categoryOrderSaved), duration: const Duration(seconds: 1)),
         );
       }
     } catch (e) {
-      _showError('並び順の保存に失敗しました: $e');
+      _showError('${l.orderSaveFailed}: $e');
     }
   }
 
   void _showAddDialog() {
     if (_categories.length >= 12) {
-      _showError('カテゴリは最大12件までです');
+      _showError(l.categoryMaxReached);
       return;
     }
 
@@ -172,7 +194,7 @@ class _CategoryCustomizeScreenState extends State<CategoryCustomizeScreen> {
         onSave: (name, emoji, minutes) async {
           // ダイアログを先に閉じる
           Navigator.of(dialogContext).pop();
-          
+
           try {
             await _firestoreService.addCustomCategory(
               name: name,
@@ -181,16 +203,16 @@ class _CategoryCustomizeScreenState extends State<CategoryCustomizeScreen> {
               order: _categories.length + 1,
             );
             if (!mounted) return;
-            
+
             await _loadCategories();
             if (!mounted) return;
-            
+
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('カテゴリを追加しました')),
+              SnackBar(content: Text(l.categoryAdded)),
             );
           } catch (e) {
             if (!mounted) return;
-            _showError('追加に失敗しました: $e');
+            _showError('${l.addFailed}: $e');
           }
         },
       ),
@@ -211,7 +233,7 @@ class _CategoryCustomizeScreenState extends State<CategoryCustomizeScreen> {
         onSave: (name, emoji, minutes) async {
           // ダイアログを先に閉じる
           Navigator.of(dialogContext).pop();
-          
+
           try {
             if (isDefault) {
               // デフォルトカテゴリを編集：overridesDefaultIdフィールド付きで新規追加
@@ -231,18 +253,18 @@ class _CategoryCustomizeScreenState extends State<CategoryCustomizeScreen> {
                 defaultMinutes: minutes,
               );
             }
-            
+
             // 成功後の処理（親のcontextを使用）
             if (!mounted) return;
             await _loadCategories();
-            
+
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('カテゴリを更新しました')),
+              SnackBar(content: Text(l.categoryUpdated)),
             );
           } catch (e) {
             if (!mounted) return;
-            _showError('更新に失敗しました: $e');
+            _showError('${l.updateFailed}: $e');
           }
         },
       ),
@@ -252,21 +274,27 @@ class _CategoryCustomizeScreenState extends State<CategoryCustomizeScreen> {
   void _confirmDelete(String id, String name) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('削除確認'),
-        content: const Text('このカテゴリを削除しますか？\nこの操作は元に戻せません。'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('キャンセル')),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _deleteCategory(id);
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('削除する'),
-          ),
-        ],
-      ),
+      builder: (context) {
+        final l = AppLocalizations.of(context)!;
+        return AlertDialog(
+          title: Text(l.categoryDeleteConfirm),
+          content: Text(l.categoryDeleteNote),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(l.cancel),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _deleteCategory(id);
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: Text(l.delete),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -275,10 +303,10 @@ class _CategoryCustomizeScreenState extends State<CategoryCustomizeScreen> {
       await _firestoreService.deleteCustomCategory(id);
       await _loadCategories();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('カテゴリを削除しました')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.categoryDeleted)));
       }
     } catch (e) {
-      _showError('削除に失敗しました: $e');
+      _showError('${l.deleteFailed}: $e');
     }
   }
 
@@ -314,6 +342,8 @@ class _CategoryDialogState extends State<_CategoryDialog> {
   late TextEditingController _minutesController;
   String _selectedEmoji = '';
 
+  AppLocalizations get l => AppLocalizations.of(context)!;
+
   @override
   void initState() {
     super.initState();
@@ -332,11 +362,31 @@ class _CategoryDialogState extends State<_CategoryDialog> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.initialName != null;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
 
-    return UnifiedModalContainer(
-      isDialog: true,
-      child: SingleChildScrollView(
-        child: Column(
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+      child: Container(
+        width: screenWidth * 0.90,
+        constraints: BoxConstraints(
+          maxHeight: screenHeight * 0.85,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(24),
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -346,15 +396,15 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                 const Icon(Icons.category, color: UnifiedModalStyles.primaryPink, size: 24),
                 const SizedBox(width: 12),
                 Text(
-                  isEdit ? 'カテゴリを編集' : 'カテゴリを追加',
+                  isEdit ? l.categoryEditTitle : l.categoryAddTitle,
                   style: UnifiedModalStyles.titleStyle,
                 ),
               ],
             ),
             const SizedBox(height: 24),
-            
+
             // 絵文字選択
-            const Text('絵文字', style: UnifiedModalStyles.labelStyle),
+            Text(l.categoryEmoji, style: UnifiedModalStyles.labelStyle),
             const SizedBox(height: 12),
             Center(
               child: GestureDetector(
@@ -396,7 +446,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                         children: [
                           Icon(Icons.touch_app, size: 16, color: UnifiedModalStyles.captionStyle.color),
                           const SizedBox(width: 6),
-                          Text('タップしてアイコンを選ぶ', style: UnifiedModalStyles.captionStyle),
+                          Text(l.categorySelectEmoji, style: UnifiedModalStyles.captionStyle),
                         ],
                       ),
                     ],
@@ -405,22 +455,22 @@ class _CategoryDialogState extends State<_CategoryDialog> {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // カテゴリ名
-            const Text('カテゴリ名', style: UnifiedModalStyles.labelStyle),
+            Text(l.categoryName, style: UnifiedModalStyles.labelStyle),
             const SizedBox(height: 12),
             TextField(
               controller: _nameController,
               decoration: UnifiedModalStyles.textFieldDecoration(
-                hintText: '例：お弁当作り',
+                hintText: l.categoryNameHint,
               ),
               maxLength: 20,
               contextMenuBuilder: buildFamicaContextMenu,
             ),
             const SizedBox(height: 20),
-            
+
             // 所要時間
-            const Text('所要時間（分）', style: UnifiedModalStyles.labelStyle),
+            Text(l.categoryDuration, style: UnifiedModalStyles.labelStyle),
             const SizedBox(height: 12),
             GestureDetector(
               onTap: _showTimeSelectionDialog,
@@ -437,10 +487,10 @@ class _CategoryDialogState extends State<_CategoryDialog> {
               ),
             ),
             const SizedBox(height: 32),
-            
+
             // ボタン
             UnifiedSaveButton(
-              text: '変更を保存',
+              text: l.settingsSaveChanges,
               onPressed: _save,
             ),
             const SizedBox(height: 12),
@@ -448,6 +498,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -459,7 +510,8 @@ class _CategoryDialogState extends State<_CategoryDialog> {
       builder: (context) {
         final screenHeight = MediaQuery.of(context).size.height;
         final screenWidth = MediaQuery.of(context).size.width;
-        
+        final l = AppLocalizations.of(context)!;
+
         return Container(
           width: screenWidth,
           constraints: BoxConstraints(
@@ -483,7 +535,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              
+
               // タイトル
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
@@ -498,11 +550,11 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                       child: const Icon(Icons.apps, color: UnifiedModalStyles.primaryPink, size: 20),
                     ),
                     const SizedBox(width: 12),
-                    const Text('アイコンを選択', style: UnifiedModalStyles.titleStyle),
+                    Text(l.categorySelectEmojiTitle, style: UnifiedModalStyles.titleStyle),
                   ],
                 ),
               ),
-              
+
               // アイコングリッド
               Flexible(
                 child: SingleChildScrollView(
@@ -520,7 +572,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                     itemBuilder: (context, index) {
                       final emoji = FamicaIcons.allIcons[index];
                       final isSelected = emoji == _selectedEmoji;
-                      
+
                       return GestureDetector(
                         onTap: () {
                           setState(() => _selectedEmoji = emoji);
@@ -529,13 +581,13 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
                           decoration: BoxDecoration(
-                            color: isSelected 
+                            color: isSelected
                                 ? UnifiedModalStyles.primaryPink.withOpacity(0.1)
                                 : Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isSelected 
-                                  ? UnifiedModalStyles.primaryPink 
+                              color: isSelected
+                                  ? UnifiedModalStyles.primaryPink
                                   : Colors.grey[200]!,
                               width: isSelected ? 2 : 1,
                             ),
@@ -573,7 +625,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
   void _showTimeSelectionDialog() {
     final timeOptions = [5, 10, 15, 20, 30, 45, 60, 90, 120];
     final currentMinutes = int.tryParse(_minutesController.text) ?? 30;
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -581,7 +633,8 @@ class _CategoryDialogState extends State<_CategoryDialog> {
       builder: (context) {
         final screenHeight = MediaQuery.of(context).size.height;
         final screenWidth = MediaQuery.of(context).size.width;
-        
+        final l = AppLocalizations.of(context)!;
+
         return Container(
           width: screenWidth,
           constraints: BoxConstraints(
@@ -602,11 +655,11 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                 children: [
                   const Icon(Icons.timer, color: UnifiedModalStyles.primaryPink, size: 24),
                   const SizedBox(width: 12),
-                  const Text('所要時間を選択', style: UnifiedModalStyles.titleStyle),
+                  Text(l.categorySelectDuration, style: UnifiedModalStyles.titleStyle),
                 ],
               ),
               const SizedBox(height: 20),
-              
+
               // スクロール可能なリスト
               Flexible(
                 child: SingleChildScrollView(
@@ -621,7 +674,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                           title: Text(
-                            '$minutes分',
+                            l.quickRecordMinutes(minutes),
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -656,16 +709,16 @@ class _CategoryDialogState extends State<_CategoryDialog> {
     final minutesText = _minutesController.text.trim();
 
     if (name.isEmpty) {
-      _showError('カテゴリ名を入力してください');
+      _showError(l.categoryNameEmpty);
       return;
     }
     if (_selectedEmoji.isEmpty) {
-      _showError('絵文字を選択してください');
+      _showError(l.categoryEmojiEmpty);
       return;
     }
     final minutes = int.tryParse(minutesText);
     if (minutes == null || minutes <= 0) {
-      _showError('正しい時間を入力してください');
+      _showError(l.categoryInvalidTime);
       return;
     }
 
@@ -681,7 +734,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
 }
 
 /// 🎨 Famica アイコンリスト
-/// 
+///
 /// 新しいアイコンを追加する方法:
 /// 1. 下記のリストに絵文字を追加するだけ！
 /// 2. カテゴリコメントで整理しておくと便利
@@ -690,67 +743,67 @@ class FamicaIcons {
     // 料理・食事
     '🍳', '🍽', '🥘', '🍱', '🥗', '🍜', '🍲', '🥞', '🧆', '🥙',
     '🍕', '🍔', '🌮', '🌯', '🥪', '🍝', '🍛', '🍣', '🍤', '🥟',
-    
+
     // 洗濯・掃除
     '🧺', '🧼', '🧽', '🧴', '🧹', '🧻', '🪣', '🛁', '🚿', '💧',
     '🧽', '🪟', '🚪', '🛋', '🛏', '🪑', '🚰', '💦', '🫧', '✨',
-    
+
     // 買い物
     '🛒', '🛍', '🏪', '🎁', '📦', '🎀', '💰', '💳', '💵', '💴',
     '🏬', '🏪', '🏢', '🛍️', '🎊', '🎉', '🎈', '🎁', '🎀', '📦',
-    
+
     // ゴミ・リサイクル
     '🚮', '🗑', '♻️', '📮', '📪', '📬', '📭', '📫', '🗄', '🗃',
-    
+
     // 育児・子育て
     '👶', '🍼', '🧸', '🎈', '🎨', '📚', '🎒', '🏫', '👪', '🤱',
     '👨‍👩‍👧', '👨‍👩‍👦', '🧒', '👧', '👦', '🎓', '📖', '✏️', '🖍', '🎭',
-    
+
     // 交通・移動
     '🚗', '🚕', '🚙', '🚌', '🚎', '🚐', '🚑', '🚒', '🚓', '🚔',
     '🚖', '🚘', '🚛', '🚜', '🚲', '🛴', '🛵', '🏍', '🚂', '🚃',
-    
+
     // 仕事・事務
     '🧾', '📅', '📝', '📄', '📃', '📑', '📊', '📈', '📉', '💼',
     '📋', '📌', '📍', '✂️', '📐', '📏', '📎', '🖇', '📁', '📂',
-    
+
     // 愛情・コミュニケーション
     '❤️', '💌', '💐', '🌸', '🌺', '🌻', '🌷', '🌹', '💝', '💖',
     '💗', '💓', '💕', '💞', '💘', '💟', '💬', '💭', '🗨', '💡',
-    
+
     // 健康・ヘルスケア
     '💊', '💉', '🩹', '🩺', '🌡', '💪', '🧘', '🏃', '🚶', '🧖',
     '😴', '🛌', '😪', '🥱', '😌', '😇', '🧘‍♀️', '🧘‍♂️', '🏋️', '⚕️',
-    
+
     // ペット
     '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯',
     '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🐤', '🐣',
-    
+
     // 自然・天気
     '🌞', '🌙', '⭐', '✨', '🌟', '💫', '☀️', '🌤', '⛅', '🌥',
     '☁️', '🌦', '🌧', '⛈', '🌩', '🌨', '❄️', '☃️', '⛄', '🌬',
-    
+
     // 食材・飲み物
     '🥬', '🥦', '🥒', '🌶', '🫑', '🥕', '🧅', '🧄', '🥔', '🍠',
     '🥐', '🍞', '🥖', '🥨', '🥯', '🧀', '🥚', '🍳', '🥓', '🥩',
     '☕', '🍵', '🧃', '🥤', '🧋', '🍶', '🍾', '🍷', '🍸', '🍹',
-    
+
     // スポーツ・レジャー
     '⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🥏', '🎱',
     '🏓', '🏸', '🏒', '🏑', '🥍', '🏏', '🪀', '🎯', '⛳', '🎣',
-    
+
     // 音楽・芸術
     '🎵', '🎶', '🎤', '🎧', '🎼', '🎹', '🥁', '🎷', '🎺', '🎸',
     '🎻', '🪕', '🎨', '🖌', '🖍', '🖊', '✏️', '📝', '🎭', '🎪',
-    
+
     // テクノロジー
     '📱', '💻', '⌚', '📷', '📺', '🎮', '🖥', '⌨️', '🖱', '🖨',
     '📞', '📟', '📠', '📡', '🔋', '🔌', '💡', '🔦', '🕯', '🪔',
-    
+
     // ツール・作業
     '🔧', '🔨', '🪛', '🔩', '⚙️', '🛠', '⛏', '🪓', '⚒', '🔪',
     '🗡', '⚔️', '🪃', '🏹', '🛡', '🪚', '🔗', '⛓', '🪝', '🧰',
-    
+
     // その他日常
     '🎁', '🎀', '🎊', '🎉', '🎈', '🎏', '🎐', '🧧', '✉️', '📧',
     '📮', '📪', '📫', '📬', '📭', '📦', '📯', '📢', '📣', '📡',

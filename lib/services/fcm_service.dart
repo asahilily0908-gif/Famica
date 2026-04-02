@@ -5,13 +5,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 /// FCM通知サービス
 /// - トークン登録・管理
 /// - 通知ハンドリング（フォアグラウンド/バックグラウンド）
 /// - アクティビティ追跡
 /// - 設定管理
-class FCMService {
+class FCMService with WidgetsBindingObserver {
   static final FCMService _instance = FCMService._internal();
   factory FCMService() => _instance;
   FCMService._internal();
@@ -26,6 +27,7 @@ class FCMService {
   static bool _initialized = false;
   static int _initCallCount = 0; // デバッグ用：初期化呼び出し回数
   String? _currentToken;
+  bool _tokenSavedToFirestore = false;
   Timer? _activityDebounceTimer;
 
   // ========================================
@@ -35,7 +37,7 @@ class FCMService {
   /// FCMサービスを初期化（冪等）
   Future<void> initialize() async {
     _initCallCount++;
-    
+
     if (_initialized) {
       print('ℹ️ FCMService.initialize() 呼び出し #$_initCallCount: 既に初期化済み（スキップ）');
       if (kDebugMode) {
@@ -57,14 +59,17 @@ class FCMService {
       // 通知権限をリクエスト
       await _requestPermissions();
 
-      // トークンを取得・登録
-      await _setupToken();
+      // トークンを取得・登録（リトライ付き）
+      await _setupTokenWithRetry();
 
       // トークン更新リスナーを設定
       _setupTokenRefreshListener();
 
       // フォアグラウンドメッセージハンドラーを設定
       _setupForegroundHandler();
+
+      // フォアグラウンド復帰時の再試行用にライフサイクルを監視
+      WidgetsBinding.instance.addObserver(this);
 
       // バックグラウンド/終了時のメッセージハンドラー（main.dartで設定）
 
@@ -73,6 +78,15 @@ class FCMService {
     } catch (e) {
       print('❌ FCMService初期化エラー: $e');
       rethrow;
+    }
+  }
+
+  /// アプリのライフサイクル変更を監視
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !_tokenSavedToFirestore) {
+      print('🔄 フォアグラウンド復帰: FCMトークン未保存のため再試行');
+      _setupTokenWithRetry();
     }
   }
 
@@ -117,6 +131,31 @@ class FCMService {
   // トークン管理
   // ========================================
 
+  /// トークンを取得してFirestoreに登録（リトライ付き）
+  Future<void> _setupTokenWithRetry({int maxRetries = 3}) async {
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await _setupToken();
+        if (_tokenSavedToFirestore) {
+          print('✅ FCMトークン保存確認済み（試行 $attempt/$maxRetries）');
+          return;
+        }
+      } catch (e) {
+        print('⚠️ トークンセットアップ試行 $attempt/$maxRetries 失敗: $e');
+      }
+
+      if (attempt < maxRetries) {
+        final delay = Duration(seconds: 2 * attempt);
+        print('⏳ ${delay.inSeconds}秒後にリトライ...');
+        await Future.delayed(delay);
+      }
+    }
+
+    if (!_tokenSavedToFirestore) {
+      print('❌ FCMトークンの保存に失敗しました（$maxRetries回試行）');
+    }
+  }
+
   /// トークンを取得してFirestoreに登録
   Future<void> _setupToken() async {
     final user = _auth.currentUser;
@@ -125,65 +164,62 @@ class FCMService {
       return;
     }
 
-    try {
-      // ========================================
-      // iOS: 先にAPNSトークンを取得（重要）
-      // ========================================
-      if (defaultTargetPlatform == TargetPlatform.iOS) {
-        String? apnsToken = await _messaging.getAPNSToken();
-        if (apnsToken != null) {
-          print('🍎 APNSトークン取得成功: ${apnsToken.substring(0, 20)}...');
-        } else {
-          print('⚠️ APNSトークンを取得できませんでした');
-          print('   → 実機で実行していることを確認してください');
-          print('   → Xcodeで Push Notifications capability が有効か確認してください');
+    // ========================================
+    // iOS: 先にAPNSトークンを取得（重要）
+    // ========================================
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      String? apnsToken = await _messaging.getAPNSToken();
+      if (apnsToken != null) {
+        print('🍎 APNSトークン取得成功: ${apnsToken.substring(0, apnsToken.length.clamp(0, 20))}...');
+      } else {
+        print('⚠️ APNSトークンを取得できませんでした');
+        print('   → 実機で実行していることを確認してください');
+        print('   → Xcodeで Push Notifications capability が有効か確認してください');
 
-          // APNSトークンがない場合、再試行（最大3回、1秒間隔）
-          for (int i = 0; i < 3; i++) {
-            await Future.delayed(const Duration(seconds: 1));
-            apnsToken = await _messaging.getAPNSToken();
-            if (apnsToken != null) {
-              print('🍎 APNSトークン取得成功（再試行 ${i + 1}回目）');
-              break;
-            }
+        // APNSトークンがない場合、再試行（最大5回、2秒間隔）
+        for (int i = 0; i < 5; i++) {
+          await Future.delayed(const Duration(seconds: 2));
+          apnsToken = await _messaging.getAPNSToken();
+          if (apnsToken != null) {
+            print('🍎 APNSトークン取得成功（再試行 ${i + 1}回目）');
+            break;
           }
-        }
-
-        // APNSトークンが取得できなかった場合、FCMトークンも無効になるため中断
-        if (apnsToken == null) {
-          print('❌ APNSトークン取得失敗: FCMトークンの取得をスキップします');
-          return;
+          print('   APNSトークン再試行 ${i + 1}/5: まだ取得できません');
         }
       }
 
-      // ========================================
-      // FCMトークンを取得
-      // ========================================
-      final token = await _messaging.getToken();
-      if (token == null) {
-        print('⚠️ FCMトークンを取得できませんでした');
+      // APNSトークンが取得できなかった場合、FCMトークンも無効になるため中断
+      if (apnsToken == null) {
+        print('❌ APNSトークン取得失敗: FCMトークンの取得をスキップします');
         return;
       }
-
-      _currentToken = token;
-      print('📱 FCMトークン取得成功:');
-      print('   トークン長: ${token.length}文字');
-      print('   先頭20文字: ${token.substring(0, 20)}...');
-      if (kDebugMode) {
-        print('🔑 完全なFCMトークン（コピーしてFirebase Consoleで使用）:');
-        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        print(token);
-        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      }
-
-      // Firestoreに保存
-      await _saveTokenToFirestore(token);
-
-      // デフォルト設定を初期化（既存の場合はスキップ）
-      await _initializeDefaultSettings();
-    } catch (e) {
-      print('❌ トークン取得エラー: $e');
     }
+
+    // ========================================
+    // FCMトークンを取得
+    // ========================================
+    final token = await _messaging.getToken();
+    if (token == null) {
+      print('⚠️ FCMトークンを取得できませんでした');
+      return;
+    }
+
+    _currentToken = token;
+    print('📱 FCMトークン取得成功:');
+    print('   トークン長: ${token.length}文字');
+    print('   先頭20文字: ${token.substring(0, token.length.clamp(0, 20))}...');
+    if (kDebugMode) {
+      print('🔑 完全なFCMトークン（コピーしてFirebase Consoleで使用）:');
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      print(token);
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    }
+
+    // Firestoreに保存
+    await _saveTokenToFirestore(token);
+
+    // デフォルト設定を初期化（既存の場合はスキップ）
+    await _initializeDefaultSettings();
   }
 
   /// トークンをFirestoreに保存
@@ -198,17 +234,31 @@ class FCMService {
         },
       }, SetOptions(merge: true));
 
-      print('✅ FCMトークン保存完了');
+      _tokenSavedToFirestore = true;
+      print('✅ FCMトークン保存完了 (users/${user.uid})');
+
+      // 保存を検証
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      final data = doc.data();
+      final savedTokens = data?['fcmTokens'] as Map<String, dynamic>?;
+      if (savedTokens != null && savedTokens.containsKey(token)) {
+        print('✅ FCMトークン保存検証OK: Firestoreに正しく保存されています');
+      } else {
+        print('⚠️ FCMトークン保存検証NG: Firestoreに保存されていません');
+        _tokenSavedToFirestore = false;
+      }
     } catch (e) {
       print('❌ トークン保存エラー: $e');
+      _tokenSavedToFirestore = false;
     }
   }
 
   /// トークン更新リスナーを設定
   void _setupTokenRefreshListener() {
     _messaging.onTokenRefresh.listen((newToken) {
-      print('🔄 FCMトークン更新: ${newToken.substring(0, 20)}...');
+      print('🔄 FCMトークン更新: ${newToken.substring(0, newToken.length.clamp(0, 20))}...');
       _currentToken = newToken;
+      _tokenSavedToFirestore = false;
       _saveTokenToFirestore(newToken);
     });
   }
@@ -222,7 +272,7 @@ class FCMService {
       await _firestore.collection('users').doc(user.uid).update({
         'fcmTokens.$token': FieldValue.delete(),
       });
-      print('🗑️ 古いトークン削除: ${token.substring(0, 20)}...');
+      print('🗑️ 古いトークン削除: ${token.substring(0, token.length.clamp(0, 20))}...');
     } catch (e) {
       print('❌ トークン削除エラー: $e');
     }
@@ -236,7 +286,7 @@ class FCMService {
   void _setupForegroundHandler() {
     final listenerId = DateTime.now().millisecondsSinceEpoch;
     print('🎧 フォアグラウンドリスナー登録: ID=$listenerId');
-    
+
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print('📨 フォアグラウンド通知受信 (リスナーID: $listenerId)');
       print('   messageId: ${message.messageId}');
@@ -499,13 +549,15 @@ class FCMService {
   /// サービスをクリーンアップ
   Future<void> dispose() async {
     _activityDebounceTimer?.cancel();
-    
+    WidgetsBinding.instance.removeObserver(this);
+
     // 現在のトークンを削除（ログアウト時など）
     if (_currentToken != null) {
       await _removeTokenFromFirestore(_currentToken!);
     }
 
     _initialized = false;
+    _tokenSavedToFirestore = false;
     print('🗑️ FCMService: クリーンアップ完了');
   }
 }
@@ -522,6 +574,6 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print('   タイトル: ${message.notification?.title}');
   print('   本文: ${message.notification?.body}');
   print('   データ: ${message.data}');
-  
+
   // バックグラウンドでの追加処理が必要な場合はここに記述
 }

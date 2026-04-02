@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../l10n/app_localizations.dart';
 import '../services/firestore_service.dart';
+import '../constants/famica_colors.dart';
 import '../widgets/common_context_menu.dart';
 import '../widgets/unified_modal_styles.dart';
 
@@ -17,9 +19,11 @@ class _CostRecordScreenState extends State<CostRecordScreen> {
   final _firestoreService = FirestoreService();
   final _amountController = TextEditingController();
   final _usageController = TextEditingController();
-  
+
   String _selectedPayer = 'self'; // 'self' or 'partner'
   bool _isLoading = false;
+
+  AppLocalizations get l => AppLocalizations.of(context)!;
 
   @override
   void dispose() {
@@ -30,17 +34,19 @@ class _CostRecordScreenState extends State<CostRecordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'コストを記録',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
+    return Container(
+      decoration: const BoxDecoration(gradient: FamicaColors.appBackgroundGradient),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(
+            l.costRecordTitle,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
           ),
-        ),
-        backgroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.black,
         actions: [
@@ -53,9 +59,9 @@ class _CostRecordScreenState extends State<CostRecordScreen> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text(
-                    '保存',
-                    style: TextStyle(
+                : Text(
+                    l.save,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: UnifiedModalStyles.primaryPink,
@@ -71,14 +77,14 @@ class _CostRecordScreenState extends State<CostRecordScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 金額入力
-              const Text('金額', style: UnifiedModalStyles.labelStyle),
+              Text(l.costRecordAmount, style: UnifiedModalStyles.labelStyle),
               const SizedBox(height: 12),
               TextField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: UnifiedModalStyles.textFieldDecoration(
-                  hintText: '1000',
+                  hintText: l.costRecordAmountHint,
                   prefixIcon: const Icon(
                     Icons.currency_yen,
                     color: UnifiedModalStyles.primaryPink,
@@ -89,13 +95,13 @@ class _CostRecordScreenState extends State<CostRecordScreen> {
               const SizedBox(height: 24),
 
               // 用途入力（新機能）
-              const Text('用途', style: UnifiedModalStyles.labelStyle),
+              Text(l.costRecordPurpose, style: UnifiedModalStyles.labelStyle),
               const SizedBox(height: 12),
               TextField(
                 controller: _usageController,
                 maxLength: 50,
                 decoration: UnifiedModalStyles.textFieldDecoration(
-                  hintText: '例：食材、日用品、交通費など',
+                  hintText: l.costRecordPurposeHint,
                   prefixIcon: const Icon(
                     Icons.edit,
                     color: UnifiedModalStyles.primaryPink,
@@ -106,13 +112,13 @@ class _CostRecordScreenState extends State<CostRecordScreen> {
               const SizedBox(height: 24),
 
               // 支払った人
-              const Text('支払った人', style: UnifiedModalStyles.labelStyle),
+              Text(l.costRecordPayer, style: UnifiedModalStyles.labelStyle),
               const SizedBox(height: 12),
               FutureBuilder<Map<String, String>>(
                 future: _getPayerNames(),
                 builder: (context, snapshot) {
-                  final myName = snapshot.data?['myName'] ?? 'あなた';
-                  final partnerName = snapshot.data?['partnerName'] ?? 'パートナー';
+                  final myName = snapshot.data?['myName'] ?? l.you;
+                  final partnerName = snapshot.data?['partnerName'] ?? l.partner;
 
                   return Row(
                     children: [
@@ -140,6 +146,7 @@ class _CostRecordScreenState extends State<CostRecordScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -147,45 +154,45 @@ class _CostRecordScreenState extends State<CostRecordScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        return {'myName': 'あなた', 'partnerName': 'パートナー'};
+        return {'myName': l.you, 'partnerName': l.partner};
       }
 
       final householdId = await _firestoreService.getCurrentUserHouseholdId();
       if (householdId == null) {
-        return {'myName': 'あなた', 'partnerName': 'パートナー'};
+        return {'myName': l.you, 'partnerName': l.partner};
       }
 
       final members = await _firestoreService.getHouseholdMembers();
-      
-      String myName = 'あなた';
-      String partnerName = 'パートナー';
+
+      String myName = l.you;
+      String partnerName = l.partner;
 
       for (var member in members) {
         if (member['uid'] == user.uid) {
-          myName = member['displayName'] as String? ?? 'あなた';
+          myName = member['displayName'] as String? ?? l.you;
         } else {
-          partnerName = member['displayName'] as String? ?? 'パートナー';
+          partnerName = member['displayName'] as String? ?? l.partner;
         }
       }
 
       return {'myName': myName, 'partnerName': partnerName};
     } catch (e) {
-      return {'myName': 'あなた', 'partnerName': 'パートナー'};
+      return {'myName': l.you, 'partnerName': l.partner};
     }
   }
 
   Future<void> _saveCost() async {
     final amountText = _amountController.text.trim();
     final usage = _usageController.text.trim();
-    
+
     if (amountText.isEmpty) {
-      _showError('金額を入力してください');
+      _showError(l.costRecordEmptyAmount);
       return;
     }
 
     final amount = int.tryParse(amountText);
     if (amount == null || amount <= 0) {
-      _showError('正しい金額を入力してください');
+      _showError(l.costRecordInvalidAmount);
       return;
     }
 
@@ -194,7 +201,7 @@ class _CostRecordScreenState extends State<CostRecordScreen> {
     try {
       await _firestoreService.createCostRecord(
         amount: amount,
-        category: 'その他', // デフォルトカテゴリ
+        category: l.other, // デフォルトカテゴリ
         payer: _selectedPayer,
         memo: usage, // 用途をmemoとして保存
         usage: usage, // 用途フィールドを追加
@@ -205,15 +212,15 @@ class _CostRecordScreenState extends State<CostRecordScreen> {
       Navigator.pop(context, true); // trueを返して保存成功を通知
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('💰 コストを記録しました'),
+        SnackBar(
+          content: Text(l.costRecordSuccess),
           backgroundColor: UnifiedModalStyles.primaryPink,
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
         ),
       );
     } catch (e) {
       setState(() => _isLoading = false);
-      _showError('保存に失敗しました: $e');
+      _showError('${l.costRecordFailed}: $e');
     }
   }
 

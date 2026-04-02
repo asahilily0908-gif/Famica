@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../constants/famica_colors.dart';
+import '../l10n/app_localizations.dart';
+import '../widgets/glass_components.dart';
+import '../widgets/glass_nav_bar.dart';
 import '../widgets/banner_ad_widget.dart';
 import '../services/fcm_service.dart';
 import 'quick_record_screen.dart';
@@ -7,7 +9,7 @@ import 'couple_screen.dart';
 import 'letter_screen.dart';
 import 'settings_screen.dart';
 
-/// Famica メイン画面（ボトムナビゲーション付き・広告付き無料版）
+/// Famica メイン画面（フローティングガラスナビゲーション）
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -52,64 +54,43 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final l = AppLocalizations.of(context)!;
+    return GlassScaffold(
+      extendBody: true,
       body: _screens[_currentIndex],
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const BannerAdWidget(),
-          Container(
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: BottomNavigationBar(
-              type: BottomNavigationBarType.fixed,
-              currentIndex: _currentIndex,
-              onTap: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-              },
-              selectedItemColor: FamicaColors.accent,
-              unselectedItemColor: Colors.grey,
-              showSelectedLabels: true,
-              showUnselectedLabels: true,
-              selectedLabelStyle: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
+          GlassNavBar(
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            items: [
+              GlassNavItem(
+                icon: Icons.add_circle_outline,
+                activeIcon: Icons.add_circle,
+                label: l.navRecord,
               ),
-              unselectedLabelStyle: const TextStyle(
-                fontSize: 12,
+              GlassNavItem(
+                icon: Icons.trending_up_outlined,
+                activeIcon: Icons.trending_up,
+                label: l.navCouple,
               ),
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.add_circle_outline, size: 28),
-                  activeIcon: Icon(Icons.add_circle, size: 28),
-                  label: '記録',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.trending_up_outlined, size: 28),
-                  activeIcon: Icon(Icons.trending_up, size: 28),
-                  label: 'ふたり',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.mail_outline, size: 28),
-                  activeIcon: Icon(Icons.mail, size: 28),
-                  label: '手紙',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.settings_outlined, size: 28),
-                  activeIcon: Icon(Icons.settings, size: 28),
-                  label: '設定',
-                ),
-              ],
-            ),
+              GlassNavItem(
+                icon: Icons.mail_outline,
+                activeIcon: Icons.mail,
+                label: l.navLetter,
+              ),
+              GlassNavItem(
+                icon: Icons.settings_outlined,
+                activeIcon: Icons.settings,
+                label: l.navSettings,
+              ),
+            ],
           ),
         ],
       ),

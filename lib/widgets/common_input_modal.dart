@@ -3,6 +3,7 @@ import '../widgets/common_context_menu.dart';
 import 'package:flutter/services.dart';
 import '../widgets/common_context_menu.dart';
 import '../constants/famica_colors.dart';
+import '../l10n/app_localizations.dart';
 import '../widgets/common_context_menu.dart';
 
 /// Famica統一デザインの入力モーダル
@@ -136,9 +137,9 @@ class CommonInputModal extends StatelessWidget {
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text(
-                        'キャンセル',
-                        style: TextStyle(
+                      child: Text(
+                        AppLocalizations.of(context)!.cancel,
+                        style: const TextStyle(
                           fontSize: 16,
                           color: Color(0xFF999999),
                         ),

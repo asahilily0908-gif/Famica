@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../constants/famica_colors.dart';
+import '../l10n/app_localizations.dart';
 
 /// 過去記録（6ヶ月分）ウィジェット
 class SixMonthChartWidget extends StatefulWidget {
@@ -32,8 +33,9 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     if (widget.monthlyData.isEmpty && widget.userBreakdownData.isEmpty) {
-      return _buildEmptyState();
+      return _buildEmptyState(l);
     }
 
     return Container(
@@ -57,8 +59,8 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                '過去記録（6ヶ月分）',
+              Text(
+                l.chartPast6Months,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -89,8 +91,8 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
                       size: 16,
                     ),
                     const SizedBox(width: 4),
-                    const Text(
-                      '内訳',
+                    Text(
+                      l.chartBreakdown,
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -105,9 +107,9 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
           
           // A. 折れ線グラフ or B. ドーナツ内訳（トグルで切り替え）
           if (_showLineChart)
-            _buildPerUserRecordCountChart()
+            _buildPerUserRecordCountChart(l)
           else
-            _buildUserBreakdownChart(),
+            _buildUserBreakdownChart(l),
         ],
       ),
     );
@@ -151,7 +153,7 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
   }
 
   /// A. 棒グラフ（記録回数）- ユーザーごとの2系列
-  Widget _buildPerUserRecordCountChart() {
+  Widget _buildPerUserRecordCountChart(AppLocalizations l) {
     if (widget.monthlyData.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -309,7 +311,7 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
                       final isMyData = rodIndex == 0;
                       final name = isMyData ? widget.myName : widget.partnerName;
                       return BarTooltipItem(
-                        '$name\n${rod.toY.toInt()}回',
+                        l.chartCountTimes(name, rod.toY.toInt()),
                         const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -354,7 +356,7 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
   }
 
   /// B. ふたりの家事の内訳
-  Widget _buildUserBreakdownChart() {
+  Widget _buildUserBreakdownChart(AppLocalizations l) {
    if (widget.userBreakdownData.isEmpty) {
       return Column(
         children: [
@@ -362,7 +364,7 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
           Icon(Icons.pie_chart_outline, size: 48, color: Colors.grey[300]),
           const SizedBox(height: 12),
           Text(
-            'まだデータがありません',
+            l.chartNoData,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -371,7 +373,7 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
           ),
           const SizedBox(height: 6),
           Text(
-            '記録をしてみましょう',
+            l.chartStartRecording,
             style: TextStyle(fontSize: 13, color: Colors.grey[500]),
           ),
           const SizedBox(height: 20),
@@ -397,11 +399,12 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
               user.uid,
               categoryNames,
               const Color(0xFFFF6FA5),
+              l,
             ),
             const SizedBox(height: 16),
             // パートナーが招待されていない場合は招待案内を表示
             if (!widget.isPartnerInvited)
-              _buildPartnerInviteAnnouncement()
+              _buildPartnerInviteAnnouncement(l)
             else
               _buildUserPieCard(
                 widget.partnerName,
@@ -411,6 +414,7 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
                 ),
                 categoryNames,
                 const Color(0xFF4A90E2),
+                l,
               ),
           ],
         );
@@ -423,6 +427,7 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
     String userId,
     Map<String, String> categoryNames,
     Color userColor,
+    AppLocalizations l,
   ) {
     final userCategories = widget.userBreakdownData[userId] ?? {};
     
@@ -465,7 +470,7 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
                     height: 120,
                     child: Center(
                       child: Text(
-                        'まだデータがありません',
+                        l.chartNoData,
                         style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                         textAlign: TextAlign.center,
                       ),
@@ -646,7 +651,7 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
   }
 
   /// パートナー招待案内ウィジェット
-  Widget _buildPartnerInviteAnnouncement() {
+  Widget _buildPartnerInviteAnnouncement(AppLocalizations l) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -663,7 +668,7 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
           ),
           const SizedBox(height: 16),
           Text(
-            'パートナーを招待しよう',
+            l.chartInvitePartner,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -673,7 +678,7 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
           ),
           const SizedBox(height: 8),
           Text(
-            'ふたりの推移を確認できるようになります',
+            l.chartInvitePartnerDesc,
             style: TextStyle(
               fontSize: 13,
               color: Colors.grey[600],
@@ -685,7 +690,7 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppLocalizations l) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(40),
@@ -712,7 +717,7 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
             ),
             const SizedBox(height: 20),
             Text(
-              'まだデータがありません 😌',
+              l.chartNoDataYet,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -722,7 +727,7 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
             ),
             const SizedBox(height: 8),
             Text(
-              '記録を続けて推移を確認しましょう',
+              l.chartKeepRecording,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[500],

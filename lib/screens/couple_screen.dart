@@ -12,7 +12,9 @@ import '../widgets/famica_header.dart';
 import '../widgets/common_context_menu.dart';
 import '../widgets/daily_tip_card.dart';
 import '../widgets/partner_invite_card.dart';
+import '../widgets/unified_modal_styles.dart';
 import 'gratitude_history_screen.dart';
+import '../l10n/app_localizations.dart';
 
 /// Famica ホーム画面（今月のふたり）
 class CoupleScreen extends StatefulWidget {
@@ -24,23 +26,26 @@ class CoupleScreen extends StatefulWidget {
 
 class _CoupleScreenState extends State<CoupleScreen> {
   final FirestoreService _firestoreService = FirestoreService();
+  AppLocalizations get l => AppLocalizations.of(context)!;
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final month = '${now.year}-${now.month.toString().padLeft(2, '0')}';
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ヘッダー
-              _buildHeader(),
+    return Container(
+      decoration: const BoxDecoration(gradient: FamicaColors.appBackgroundGradient),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ヘッダー
+                _buildHeader(),
 
-              _buildPieChartSection(month),
+                _buildPieChartSection(month),
               
               // 💖 感謝を送る セクション（円グラフ直下に移動）
               _buildGratitudeSection(),
@@ -76,7 +81,7 @@ class _CoupleScreenState extends State<CoupleScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          '行動のヒント',
+                          l.coupleActionTip,
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -96,6 +101,7 @@ class _CoupleScreenState extends State<CoupleScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -112,7 +118,7 @@ class _CoupleScreenState extends State<CoupleScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'ふたりのがんばりを10秒で記録',
+            l.appTagline,
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[600],
@@ -141,12 +147,12 @@ class _CoupleScreenState extends State<CoupleScreen> {
         }
 
         final stats = snapshot.data ?? {};
-        final myName = stats['myName'] ?? 'あなた';
-        final partnerName = stats['partnerName'] ?? 'パートナー';
+        final myName = stats['myName'] ?? l.you;
+        final partnerName = stats['partnerName'] ?? l.partner;
         final myCount = stats['myCount'] ?? 0;
         final partnerCount = stats['partnerCount'] ?? 0;
         final totalCount = myCount + partnerCount;
-        
+
         // 記録回数ベースで割合を計算
         final myCountPercent = totalCount > 0 ? (myCount / totalCount * 100).round() : 50;
         final partnerCountPercent = totalCount > 0 ? (partnerCount / totalCount * 100).round() : 50;
@@ -196,8 +202,8 @@ class _CoupleScreenState extends State<CoupleScreen> {
                     centerWidget: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
-                          '今月',
+                        Text(
+                          l.coupleThisMonth,
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey,
@@ -308,23 +314,23 @@ class _CoupleScreenState extends State<CoupleScreen> {
                 style: TextStyle(fontSize: 20, color: Colors.white),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '感謝メッセージを送る',
-                      style: TextStyle(
+                      l.coupleSendGratitude,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
-                      'パートナーに感謝の気持ちを伝えましょう',
-                      style: TextStyle(
+                      l.coupleSendGratitudeDesc,
+                      style: const TextStyle(
                         fontSize: 12,
                         color: Colors.white,
                       ),
@@ -405,8 +411,8 @@ class _CoupleScreenState extends State<CoupleScreen> {
                         children: [
                           Row(
                             children: [
-                              const Text(
-                                '感謝カードが届いています',
+                              Text(
+                                l.coupleGratitudeReceived,
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -435,8 +441,8 @@ class _CoupleScreenState extends State<CoupleScreen> {
                             ],
                           ),
                           const SizedBox(height: 4),
-                          const Text(
-                            'タップして読む',
+                          Text(
+                            l.coupleTapToRead,
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.white,
@@ -493,22 +499,22 @@ class _CoupleScreenState extends State<CoupleScreen> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '感謝メッセージを送る',
-                          style: TextStyle(
+                          l.coupleSendGratitude,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: FamicaColors.textDark,
                           ),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
-                          'パートナーに感謝の気持ちを伝えましょう',
-                          style: TextStyle(
+                          l.coupleSendGratitudeDesc,
+                          style: const TextStyle(
                             fontSize: 12,
                             color: Colors.grey,
                           ),
@@ -546,8 +552,8 @@ class _CoupleScreenState extends State<CoupleScreen> {
             }
 
             final stats = snapshot.data ?? {};
-            final myName = stats['myName'] ?? 'あなた';
-            final partnerName = stats['partnerName'] ?? 'パートナー';
+            final myName = stats['myName'] ?? l.you;
+            final partnerName = stats['partnerName'] ?? l.partner;
             final myCount = stats['myCount'] ?? 0;
             final partnerCount = stats['partnerCount'] ?? 0;
             final myTime = stats['myTime'] ?? 0;
@@ -828,7 +834,7 @@ class _CoupleScreenState extends State<CoupleScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '今月の家事内訳（カテゴリ別の合計）',
+                  l.coupleMonthlyBreakdown,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -876,7 +882,7 @@ class _CoupleScreenState extends State<CoupleScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '今月のコスト（支出）',
+                  l.coupleMonthlyCost,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -893,7 +899,7 @@ class _CoupleScreenState extends State<CoupleScreen> {
               child: Row(
                 children: [
                   Text(
-                    '合計',
+                    l.coupleTotal,
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey[600],
@@ -917,7 +923,7 @@ class _CoupleScreenState extends State<CoupleScreen> {
               const SizedBox(height: 8),
               ...costDetails.map((detail) {
                 final amount = detail['amount'] as int? ?? 0;
-                final usage = detail['usage'] as String? ?? '用途未記入';
+                final usage = detail['usage'] as String? ?? l.costRecordNoPurpose;
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 3.0),
@@ -990,7 +996,7 @@ class _CoupleScreenState extends State<CoupleScreen> {
         final memberName = data['memberName'] as String?;
         
         // taskとcategoryの両方をチェック
-        final task = data['task'] as String? ?? data['category'] as String? ?? '未分類';
+        final task = data['task'] as String? ?? data['category'] as String? ?? l.uncategorized;
         final timeMinutes = data['timeMinutes'] as int? ?? 0;
 
         // メンバー判定
@@ -1106,7 +1112,7 @@ class _CoupleScreenState extends State<CoupleScreen> {
         final data = doc.data();
         final userId = data['userId'] as String? ?? '';
         final amount = data['amount'] as int? ?? 0;
-        final usage = data['usage'] as String? ?? data['memo'] as String? ?? '用途未記入';
+        final usage = data['usage'] as String? ?? data['memo'] as String? ?? l.costRecordNoPurpose;
 
         if (userId == user.uid) {
           myCost += amount;
@@ -1144,7 +1150,7 @@ class _CoupleScreenState extends State<CoupleScreen> {
     }
   }
 
-  /// ユーザー別のカテゴリ内訳を取得
+  /// ユーザー別のカテゴリ内訳を取得（過去6ヶ月分）
   Future<Map<String, Map<String, int>>> _getUserBreakdown() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -1154,31 +1160,55 @@ class _CoupleScreenState extends State<CoupleScreen> {
       if (householdId == null) return {};
 
       final now = DateTime.now();
-      final month = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+      
+      // 過去6ヶ月分の月リストを生成（現在月を含む）
+      final monthsList = <String>[];
+      for (int i = 0; i < 6; i++) {
+        final targetDate = DateTime(now.year, now.month - i, 1);
+        final monthStr = '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}';
+        monthsList.add(monthStr);
+      }
 
-      // 今月の全記録を取得
-      final recordsSnapshot = await FirebaseFirestore.instance
-          .collection('households')
-          .doc(householdId)
-          .collection('records')
-          .where('month', isEqualTo: month)
-          .get();
+      debugPrint('📊 [UserBreakdown] 集計期間: ${monthsList.first} 〜 ${monthsList.last}');
 
       // ユーザーごとにカテゴリ別の時間を集計
       final Map<String, Map<String, int>> userData = {};
+      int totalRecords = 0;
 
-      for (var doc in recordsSnapshot.docs) {
-        final data = doc.data();
-        final categoryId = data['categoryId'] as String? ?? data['category'] as String? ?? '未分類';
-        final userId = data['memberId'] as String? ?? data['userId'] as String? ?? '';
-        final minutes = data['timeMinutes'] as int? ?? 0;
+      // 各月のデータを取得して集計
+      for (final month in monthsList) {
+        final recordsSnapshot = await FirebaseFirestore.instance
+            .collection('households')
+            .doc(householdId)
+            .collection('records')
+            .where('month', isEqualTo: month)
+            .get();
 
-        if (!userData.containsKey(userId)) {
-          userData[userId] = {};
+        debugPrint('📊 [UserBreakdown] $month: ${recordsSnapshot.docs.length}件');
+        totalRecords += recordsSnapshot.docs.length;
+
+        for (var doc in recordsSnapshot.docs) {
+          final data = doc.data();
+          final categoryId = data['categoryId'] as String? ?? data['category'] as String? ?? l.uncategorized;
+          final userId = data['memberId'] as String? ?? data['userId'] as String? ?? '';
+          final minutes = data['timeMinutes'] as int? ?? 0;
+
+          if (!userData.containsKey(userId)) {
+            userData[userId] = {};
+          }
+
+          userData[userId]![categoryId] = (userData[userId]![categoryId] ?? 0) + minutes;
         }
-
-        userData[userId]![categoryId] = (userData[userId]![categoryId] ?? 0) + minutes;
       }
+
+      debugPrint('📊 [UserBreakdown] 合計レコード数: $totalRecords件');
+      debugPrint('📊 [UserBreakdown] ユーザー数: ${userData.length}人');
+      
+      // 各ユーザーのカテゴリ別集計を出力
+      userData.forEach((userId, categories) {
+        final totalMinutes = categories.values.fold(0, (sum, minutes) => sum + minutes);
+        debugPrint('📊 [UserBreakdown] User $userId: $totalMinutes分（${categories.length}カテゴリ）');
+      });
 
       return userData;
     } catch (e) {
@@ -1218,8 +1248,8 @@ class _CoupleScreenState extends State<CoupleScreen> {
               ),
               builder: (context, statsSnapshot) {
                 final stats = statsSnapshot.data ?? {};
-                final myName = stats['myName'] ?? 'あなた';
-                final partnerName = stats['partnerName'] ?? 'パートナー';
+                final myName = stats['myName'] ?? l.you;
+                final partnerName = stats['partnerName'] ?? l.partner;
 
                 return FutureBuilder<Map<String, Map<String, int>>>(
                   future: _getUserBreakdown(),
@@ -1273,9 +1303,9 @@ class _CoupleScreenState extends State<CoupleScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Center(
+            child: Center(
               child: Text(
-                '今月の提案はまだありません💡',
+                l.coupleNoSuggestion,
                 style: TextStyle(fontSize: 14, color: Colors.grey),
               ),
             ),
@@ -1299,13 +1329,13 @@ class _CoupleScreenState extends State<CoupleScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Text('💡', style: TextStyle(fontSize: 24)),
-                  SizedBox(width: 8),
+                  const Text('💡', style: TextStyle(fontSize: 24)),
+                  const SizedBox(width: 8),
                   Text(
-                    '提案',
-                    style: TextStyle(
+                    l.coupleSuggestion,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1339,14 +1369,14 @@ class _CoupleScreenState extends State<CoupleScreen> {
 
     // ルール1: 負担が偏っている場合
     if (myPercent >= 70) {
-      suggestions.add('あなたに少し負担が偏っているようです。\nたまにはパートナーに任せてリラックスしてもいいかも☺️');
+      suggestions.add(l.coupleSuggestionOverworked);
     } else if (partnerPercent >= 70) {
-      suggestions.add('パートナーに少し負担が偏っているようです。\n感謝の気持ちを伝えてみましょう💕');
+      suggestions.add(l.coupleSuggestionPartnerOverworked);
     }
 
     // ルール2: バランスが良い場合
     if (myPercent >= 40 && myPercent <= 60) {
-      suggestions.add('料理のバランスが良いですね！\nこの調子で続けていきましょう✨');
+      suggestions.add(l.coupleSuggestionBalanced);
     }
 
     return suggestions.take(2).toList();
@@ -1367,8 +1397,8 @@ class _CoupleScreenState extends State<CoupleScreen> {
       if (partner.isEmpty || partner['uid'] == null) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('パートナーが見つかりません'),
+            SnackBar(
+              content: Text(l.couplePartnerNotFound),
               backgroundColor: Colors.red,
             ),
           );
@@ -1380,7 +1410,7 @@ class _CoupleScreenState extends State<CoupleScreen> {
         showDialog(
           context: context,
           builder: (context) => _ThanksCardDialog(
-            partnerName: partner['name'] ?? 'パートナー',
+            partnerName: partner['name'] ?? l.partner,
             partnerUid: partner['uid'],
             firestoreService: _firestoreService,
           ),
@@ -1391,7 +1421,7 @@ class _CoupleScreenState extends State<CoupleScreen> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('エラーが発生しました: $e'),
+            content: Text('${l.errorOccurred}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1418,6 +1448,7 @@ class _ThanksCardDialog extends StatefulWidget {
 class _ThanksCardDialogState extends State<_ThanksCardDialog> {
   final TextEditingController _messageController = TextEditingController();
   bool _isSending = false;
+  AppLocalizations get l => AppLocalizations.of(context)!;
 
   @override
   void dispose() {
@@ -1427,10 +1458,31 @@ class _ThanksCardDialogState extends State<_ThanksCardDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return UnifiedModalContainer(
-      isDialog: true,
-      child: SingleChildScrollView(
-        child: Column(
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+      child: Container(
+        width: screenWidth * 0.90,
+        constraints: BoxConstraints(
+          maxHeight: screenHeight * 0.85,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(24),
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1442,8 +1494,8 @@ class _ThanksCardDialogState extends State<_ThanksCardDialog> {
                   style: TextStyle(fontSize: 24),
                 ),
                 const SizedBox(width: 12),
-                const Text(
-                  '感謝カードを送る',
+                Text(
+                  l.coupleSendGratitudeCard,
                   style: UnifiedModalStyles.titleStyle,
                 ),
               ],
@@ -1463,8 +1515,8 @@ class _ThanksCardDialogState extends State<_ThanksCardDialog> {
               ),
               child: Row(
                 children: [
-                  const Text(
-                    '送り先：',
+                  Text(
+                    l.coupleSendTo,
                     style: UnifiedModalStyles.labelStyle,
                   ),
                   const SizedBox(width: 8),
@@ -1482,8 +1534,8 @@ class _ThanksCardDialogState extends State<_ThanksCardDialog> {
             const SizedBox(height: 20),
             
             // メッセージ入力
-            const Text(
-              'メッセージ',
+            Text(
+              l.coupleMessage,
               style: UnifiedModalStyles.labelStyle,
             ),
             const SizedBox(height: 12),
@@ -1496,7 +1548,7 @@ class _ThanksCardDialogState extends State<_ThanksCardDialog> {
                 maxLength: 100,
                 textAlignVertical: TextAlignVertical.top,
                 decoration: UnifiedModalStyles.textFieldDecoration(
-                  hintText: '例：いつも洗い物してくれてありがとう😊',
+                  hintText: l.coupleMessageHint,
                 ),
                 contextMenuBuilder: buildFamicaContextMenu,
               ),
@@ -1505,7 +1557,7 @@ class _ThanksCardDialogState extends State<_ThanksCardDialog> {
             
             // 送信ボタン
             UnifiedSaveButton(
-              text: '送信',
+              text: l.send,
               onPressed: _sendThanksCard,
               isLoading: _isSending,
             ),
@@ -1514,6 +1566,7 @@ class _ThanksCardDialogState extends State<_ThanksCardDialog> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -1522,8 +1575,8 @@ class _ThanksCardDialogState extends State<_ThanksCardDialog> {
     
     if (message.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('メッセージを入力してください'),
+        SnackBar(
+          content: Text(l.coupleEmptyMessage),
           backgroundColor: Colors.red,
         ),
       );
@@ -1561,7 +1614,7 @@ class _ThanksCardDialogState extends State<_ThanksCardDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('送信に失敗しました: $e'),
+            content: Text('${l.coupleSendFailed}: $e'),
             backgroundColor: Colors.red,
           ),
         );

@@ -10,6 +10,7 @@ import '../services/invite_service.dart';
 import '../widgets/common_context_menu.dart';
 import '../constants/famica_colors.dart';
 import '../widgets/common_context_menu.dart';
+import '../l10n/app_localizations.dart';
 
 /// Famica Phase 1-A: 家族招待画面
 /// 招待コード表示・共有・参加機能
@@ -23,11 +24,13 @@ class FamilyInviteScreen extends StatefulWidget {
 class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
   final InviteService _inviteService = InviteService();
   final TextEditingController _inviteCodeController = TextEditingController();
-  
+
   String? _myInviteCode;
   List<Map<String, dynamic>> _members = [];
   bool _isLoading = true;
   bool _showJoinCard = false;
+
+  AppLocalizations get l => AppLocalizations.of(context)!;
 
   @override
   void initState() {
@@ -43,11 +46,11 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
 
   Future<void> _loadInviteInfo() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final inviteInfo = await _inviteService.getCurrentUserInviteInfo();
       final members = await _inviteService.getHouseholdMembers();
-      
+
       // 招待コードが存在しない、または6桁でない場合は自動再生成
       String? inviteCode = inviteInfo?['inviteCode'];
       final householdId = inviteInfo?['householdId'];
@@ -79,7 +82,7 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
 
         print('✅ 招待コード生成完了: $inviteCode');
       }
-      
+
       setState(() {
         _myInviteCode = inviteCode;
         _members = members;
@@ -93,14 +96,14 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
 
   Future<void> _copyInviteCode() async {
     if (_myInviteCode == null) return;
-    
+
     await Clipboard.setData(ClipboardData(text: _myInviteCode!));
-    
+
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('招待コードをコピーしました'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(l.inviteCopied),
+        duration: const Duration(seconds: 2),
         backgroundColor: FamicaColors.primary,
       ),
     );
@@ -108,13 +111,13 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
 
   Future<void> _shareInviteLink() async {
     if (_myInviteCode == null) return;
-    
+
     final inviteText = _inviteService.generateInviteLink(_myInviteCode!);
-    
+
     try {
       await Share.share(
         inviteText,
-        subject: 'Famicaに招待します',
+        subject: l.inviteShareSubject,
       );
     } catch (e) {
       print('❌ 共有エラー: $e');
@@ -123,9 +126,9 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
 
   Future<void> _joinHousehold() async {
     final inviteCode = _inviteCodeController.text.trim().toUpperCase();
-    
+
     if (inviteCode.isEmpty) {
-      _showErrorDialog('招待コードを入力してください');
+      _showErrorDialog(l.inviteEmptyCode);
       return;
     }
 
@@ -134,8 +137,8 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
     try {
       final result = await _inviteService.joinHouseholdByInviteCode(
         inviteCode,
-        memberName: 'パートナー',
-        role: 'パートナー',
+        memberName: l.partner,
+        role: l.partner,
       );
 
       setState(() => _isLoading = false);
@@ -146,22 +149,22 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ 参加しました！'),
+          SnackBar(
+            content: Text(l.inviteJoinSuccess),
             backgroundColor: FamicaColors.primary,
           ),
         );
-        
+
         _loadInviteInfo();
         setState(() => _showJoinCard = false);
       } else {
         // エラーメッセージを取得
-        final errorMessage = result['message'] as String? ?? '招待コードが無効です';
+        final errorMessage = result['message'] as String? ?? l.inviteInvalidCode;
         _showErrorDialog(errorMessage);
       }
     } catch (e) {
       setState(() => _isLoading = false);
-      _showErrorDialog('参加に失敗しました: $e');
+      _showErrorDialog('${l.inviteJoinFailed}: $e');
     }
   }
 
@@ -169,7 +172,7 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('エラー'),
+        title: Text(l.error),
         content: Text(message),
         actions: [
           TextButton(
@@ -192,9 +195,9 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
           elevation: 0,
           centerTitle: true,
           foregroundColor: Colors.black,
-          title: const Text(
-            'パートナーを招待',
-            style: TextStyle(
+          title: Text(
+            l.inviteTitle,
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
@@ -246,19 +249,19 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
             color: FamicaColors.primary,
           ),
           const SizedBox(height: 12),
-          const Text(
-            'パートナーをFamicaに招待しましょう！',
+          Text(
+            l.inviteDescription,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
               color: FamicaColors.textDark,
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'あなたの招待コード',
-            style: TextStyle(
+          Text(
+            l.inviteYourCode,
+            style: const TextStyle(
               fontSize: 14,
               color: FamicaColors.textLight,
             ),
@@ -287,7 +290,7 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
                 child: OutlinedButton.icon(
                   onPressed: _copyInviteCode,
                   icon: const Icon(Icons.copy, size: 18),
-                  label: const Text('コピー'),
+                  label: Text(l.copy),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: FamicaColors.primary,
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -306,7 +309,7 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _shareInviteLink,
                   icon: const Icon(Icons.share, size: 18),
-                  label: const Text('共有'),
+                  label: Text(l.share),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: FamicaColors.primary,
                     foregroundColor: Colors.white,
@@ -341,9 +344,9 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'メンバー',
-            style: TextStyle(
+          Text(
+            l.members,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: FamicaColors.textDark,
@@ -351,11 +354,11 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
           ),
           const SizedBox(height: 16),
           if (_members.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
-                'まだメンバーがいません',
-                style: TextStyle(color: FamicaColors.textLight),
+                l.inviteNoMembers,
+                style: const TextStyle(color: FamicaColors.textLight),
               ),
             )
           else
@@ -385,7 +388,7 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                member['displayName'] ?? member['name'] ?? '未設定',
+                                member['displayName'] ?? member['name'] ?? l.unset,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -436,19 +439,19 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
             color: FamicaColors.primary,
           ),
           const SizedBox(height: 16),
-          const Text(
-            '招待コードを入力',
-            style: TextStyle(
+          Text(
+            l.inviteEnterCode,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: FamicaColors.textDark,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'パートナーから受け取った\n6桁のコードを入力してください',
+          Text(
+            l.inviteEnterCodeDesc,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
               color: FamicaColors.textLight,
             ),
@@ -464,7 +467,7 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
               letterSpacing: 8,
             ),
             decoration: InputDecoration(
-              hintText: 'ABC123',
+              hintText: l.inviteCodeHint,
               counterText: '',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -499,7 +502,7 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('キャンセル'),
+                  child: Text(l.cancel),
                 ),
               ),
               const SizedBox(width: 12),
@@ -514,7 +517,7 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('参加する'),
+                  child: Text(l.join),
                 ),
               ),
             ],
@@ -546,9 +549,9 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
             color: FamicaColors.textLight.withOpacity(0.5),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'まだパートナーがいません',
-            style: TextStyle(
+          Text(
+            l.inviteNoPartner,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: FamicaColors.textDark,
@@ -556,7 +559,7 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'パートナーから招待コードを\n受け取って参加しましょう',
+            l.inviteNoPartnerDesc,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
@@ -569,7 +572,7 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
               setState(() => _showJoinCard = true);
             },
             icon: const Icon(Icons.vpn_key, size: 20),
-            label: const Text('招待コードを入力'),
+            label: Text(l.inviteEnterCode),
             style: ElevatedButton.styleFrom(
               backgroundColor: FamicaColors.primary,
               foregroundColor: Colors.white,

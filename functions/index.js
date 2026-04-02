@@ -5,6 +5,37 @@ const { OpenAI } = require('openai');
 // Firebase Admin初期化
 admin.initializeApp();
 
+// 多言語通知テキスト
+function getNotificationText(locale) {
+  const texts = {
+    ja: {
+      taskTitle: (actorName, taskName) => `${actorName}さんが「${taskName}」を記録しました`,
+      costTitle: (actorName) => `${actorName}さんがコストを記録しました`,
+      costBody: (purpose, amount) => `${purpose}: ¥${amount}`,
+      letterTitle: (fromName) => `${fromName}さんからメッセージが届きました`,
+      inactivityTitle: 'そろそろ、今日の分を10秒で',
+      inactivityBody: '',
+    },
+    en: {
+      taskTitle: (actorName, taskName) => `${actorName} recorded "${taskName}"`,
+      costTitle: (actorName) => `${actorName} recorded a cost`,
+      costBody: (purpose, amount) => `${purpose}: ¥${amount}`,
+      letterTitle: (fromName) => `You received a message from ${fromName}`,
+      inactivityTitle: "Time to record today's tasks in 10 seconds",
+      inactivityBody: '',
+    },
+    ko: {
+      taskTitle: (actorName, taskName) => `${actorName}님이 "${taskName}"을(를) 기록했습니다`,
+      costTitle: (actorName) => `${actorName}님이 비용을 기록했습니다`,
+      costBody: (purpose, amount) => `${purpose}: ¥${amount}`,
+      letterTitle: (fromName) => `${fromName}님에게서 메시지가 도착했습니다`,
+      inactivityTitle: '오늘의 기록을 10초 만에 해볼까요?',
+      inactivityBody: '',
+    },
+  };
+  return texts[locale] || texts['ja'];
+}
+
 // OpenAI設定
 // 環境変数またはFirebase configからAPIキーを取得
 const openaiKey = process.env.OPENAI_API_KEY || functions.config().openai?.key;
@@ -52,6 +83,7 @@ exports.generateAISuggestion = functions.https.onCall(async (data, context) => {
     }
 
     const userData = userDoc.data();
+    const locale = userData.locale || 'ja';
     if (userData.plan !== 'plus') {
       throw new functions.https.HttpsError(
         'permission-denied',
@@ -150,8 +182,9 @@ exports.generateAISuggestion = functions.https.onCall(async (data, context) => {
     const user1 = memberList[0] || 'メンバー1';
     const user2 = memberList[1] || 'メンバー2';
 
-    // OpenAI APIプロンプト作成（ニックネーム重視・バランス削除）
-    const prompt = `あなたは、パートナー同士の生活データをやさしく振り返るAIです。
+    // OpenAI APIプロンプト作成（ニックネーム重視・バランス削除・多言語対応）
+    const promptByLocale = {
+      ja: `あなたは、パートナー同士の生活データをやさしく振り返るAIです。
 以下の条件とフォーマットに従って、「温かく・ユーモア少し・責めない」文章でレポートを作成してください。
 
 【重要】必ずニックネームで呼びかけてください
@@ -187,17 +220,98 @@ ${Object.entries(categoryStats)
 - 必ずニックネームで呼びかける（「あなた」「メンバー」などは使わない）
 - ユーモア 1割まで
 - 絵文字は4〜6個まで
-- 説明文や補足は返さない。必ず上記4項目の形式で返す`;
+- 説明文や補足は返さない。必ず上記4項目の形式で返す`,
+      en: `You are an AI that warmly reviews household data between partners.
+Follow the conditions and format below to create a report in a "warm, slightly humorous, non-blaming" tone.
+
+【Important】Always address by nickname
+- User 1 nickname: "${user1}"
+- User 2 nickname: "${user2}"
+- Always use these nicknames in the text
+
+【Input Data】
+- This week's household records:
+${Object.entries(categoryStats)
+  .map(([cat, count]) => `  ${cat}: ${count} times`)
+  .join('\n')}
+- ${user1}: ${memberStatsWithNames[user1]?.count || 0} times, ${memberStatsWithNames[user1]?.totalMinutes || 0} min
+- ${user2}: ${memberStatsWithNames[user2]?.count || 0} times, ${memberStatsWithNames[user2]?.totalMinutes || 0} min
+
+【Output Format - Always return in the following 4 sections】
+🧾 Weekly Summary:
+{Use nicknames to warmly acknowledge both partners' efforts in 1-2 sentences}
+
+🧺 Housework Skill Check:
+・Cooking ★★★☆☆: {Brief humor + improvement hint}
+・Laundry ★★★☆☆: {Brief humor + improvement hint}
+・Cleaning ★★★☆☆: {Brief humor + improvement hint}
+
+🏅 Nice Task of the Week:
+{Use a nickname to praise the most helpful task in 1 sentence}
+
+💡 Tomorrow's One Action:
+{A suggestion for ${user1} or ${user2}, using their nickname}
+
+【Tone Rules】
+- Non-blaming, warm words
+- Always address by nickname (never use "you" or "member")
+- Humor up to 10%
+- 4-6 emojis max
+- No explanations or notes. Always return in the above 4-section format`,
+      ko: `당신은 파트너 간의 생활 데이터를 따뜻하게 돌아보는 AI입니다.
+아래 조건과 형식에 따라 "따뜻하고, 약간의 유머, 비난하지 않는" 문장으로 리포트를 작성해주세요.
+
+【중요】반드시 닉네임으로 불러주세요
+- 사용자 1 닉네임: "${user1}"
+- 사용자 2 닉네임: "${user2}"
+- 문장 내에서 반드시 이 닉네임을 사용할 것
+
+【입력 데이터】
+- 이번 주 가사 기록:
+${Object.entries(categoryStats)
+  .map(([cat, count]) => `  ${cat}: ${count}회`)
+  .join('\n')}
+- ${user1}: ${memberStatsWithNames[user1]?.count || 0}회, ${memberStatsWithNames[user1]?.totalMinutes || 0}분
+- ${user2}: ${memberStatsWithNames[user2]?.count || 0}회, ${memberStatsWithNames[user2]?.totalMinutes || 0}분
+
+【출력 형식 - 반드시 아래 4개 항목 형식으로 반환】
+🧾 이번 주 요약:
+{닉네임을 사용하여 두 사람의 노력을 1~2문장으로 따뜻하게 격려}
+
+🧺 가사 스킬 진단:
+・요리 ★★★☆☆: {짧은 유머 + 개선 힌트}
+・세탁 ★★★☆☆: {짧은 유머 + 개선 힌트}
+・청소 ★★★☆☆: {짧은 유머 + 개선 힌트}
+
+🏅 이번 주 나이스 태스크:
+{닉네임을 사용하여 가장 도움이 된 가사를 1문장으로 칭찬}
+
+💡 내일의 원 액션:
+{닉네임을 사용하여 ${user1} 또는 ${user2}에게 제안}
+
+【톤 규칙】
+- 비난하지 않기, 따뜻한 말
+- 반드시 닉네임으로 호칭 ("당신"이나 "멤버" 사용 금지)
+- 유머 10%까지
+- 이모지 4~6개
+- 설명이나 보충 없이 위의 4개 항목 형식으로만 반환`,
+    };
+    const prompt = promptByLocale[locale] || promptByLocale['ja'];
 
     console.log('📤 OpenAI APIリクエスト送信');
 
-    // OpenAI APIで提案生成
+    // OpenAI APIで提案生成（多言語対応）
+    const systemMessageByLocale = {
+      ja: 'あなたはパートナー同士の生活データをやさしく振り返るAIです。温かく・ユーモア少し・責めない口調で、家事分担のふりかえりレポートを作成します。',
+      en: 'You are an AI that warmly reviews household data between partners. Create a housework review report in a warm, slightly humorous, non-blaming tone.',
+      ko: '당신은 파트너 간의 생활 데이터를 따뜻하게 돌아보는 AI입니다. 따뜻하고, 약간의 유머, 비난하지 않는 어조로 가사 분담 리포트를 작성합니다.',
+    };
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
-          content: 'あなたはパートナー同士の生活データをやさしく振り返るAIです。温かく・ユーモア少し・責めない口調で、家事分担のふりかえりレポートを作成します。',
+          content: systemMessageByLocale[locale] || systemMessageByLocale['ja'],
         },
         {
           role: 'user',
@@ -285,6 +399,7 @@ exports.generateWeeklyReport = functions.https.onCall(async (data, context) => {
     }
 
     const userData = userDoc.data();
+    const locale = userData.locale || 'ja';
     if (userData.plan !== 'plus') {
       throw new functions.https.HttpsError(
         'permission-denied',
@@ -383,7 +498,8 @@ exports.generateWeeklyReport = functions.https.onCall(async (data, context) => {
     const user1 = memberList[0] || 'メンバー1';
     const user2 = memberList[1] || 'メンバー2';
     
-    const prompt = `あなたは、パートナー同士の生活データをやさしく振り返るAIです。
+    const weeklyPromptByLocale = {
+      ja: `あなたは、パートナー同士の生活データをやさしく振り返るAIです。
 以下の条件とフォーマットに従って、「温かく・ユーモア少し・責めない」文章でレポートを作成してください。
 
 【入力データ】
@@ -422,17 +538,104 @@ ${user1} {%} vs ${user2} {%}
 - 全体 200〜280文字以内
 - 絵文字は4〜7個まで
 - 説明文や補足は返さない。出力本文のみ返す。
-- 必ず上記フォーマットを守ること`;
+- 必ず上記フォーマットを守ること`,
+      en: `You are an AI that warmly reviews household data between partners.
+Follow the conditions and format below to create a report in a "warm, slightly humorous, non-blaming" tone.
+
+【Input Data】
+- Member nicknames: ${user1}, ${user2}
+- This week's household records:
+${Object.entries(categoryStats)
+  .map(([cat, stat]) => `  ${cat}: ${stat.count} times / ${stat.totalMinutes} min`)
+  .join('\n')}
+- This week's balance: ${user1} ${balances[user1] || 50}% vs ${user2} ${balances[user2] || 50}%
+- ${user1}: ${memberStats[user1]?.count || 0} times, ${memberStats[user1]?.totalMinutes || 0} min
+- ${user2}: ${memberStats[user2]?.count || 0} times, ${memberStats[user2]?.totalMinutes || 0} min
+
+【Output Format】
+🌿 AI Review Report (Plus)
+
+🧾 Weekly Summary
+{Warmly acknowledge both partners' efforts in 1-2 sentences}
+
+📊 Balance
+${user1} {%} vs ${user2} {%}
+
+🧺 Housework Skill Check
+・Cooking    {★1-5}: {Brief humor + improvement hint}
+・Laundry    {★1-5}: {Brief humor + improvement hint}
+・Cleaning   {★1-5}: {Brief humor + improvement hint}
+
+🏅 Nice Task of the Week
+{Praise the most helpful task in 1 sentence}
+
+💡 Tomorrow's One Action
+{One thing to try next}
+
+【Tone Rules】
+- Non-blaming, warm words
+- Humor up to 10%
+- 200-280 characters total
+- 4-7 emojis max
+- No explanations or notes. Return only the output text.
+- Always follow the above format`,
+      ko: `당신은 파트너 간의 생활 데이터를 따뜻하게 돌아보는 AI입니다.
+아래 조건과 형식에 따라 "따뜻하고, 약간의 유머, 비난하지 않는" 문장으로 리포트를 작성해주세요.
+
+【입력 데이터】
+- 멤버 닉네임: ${user1}, ${user2}
+- 이번 주 가사 기록:
+${Object.entries(categoryStats)
+  .map(([cat, stat]) => `  ${cat}: ${stat.count}회 / ${stat.totalMinutes}분`)
+  .join('\n')}
+- 이번 주 가사 밸런스: ${user1} ${balances[user1] || 50}% vs ${user2} ${balances[user2] || 50}%
+- ${user1}: ${memberStats[user1]?.count || 0}회, ${memberStats[user1]?.totalMinutes || 0}분
+- ${user2}: ${memberStats[user2]?.count || 0}회, ${memberStats[user2]?.totalMinutes || 0}분
+
+【출력 형식】
+🌿 AI 리뷰 리포트 (Plus)
+
+🧾 이번 주 요약
+{두 사람의 노력을 1~2문장으로 따뜻하게 격려}
+
+📊 밸런스
+${user1} {%} vs ${user2} {%}
+
+🧺 가사 스킬 진단
+・요리    {★1~5}: {짧은 유머 + 개선 힌트}
+・세탁    {★1~5}: {짧은 유머 + 개선 힌트}
+・청소    {★1~5}: {짧은 유머 + 개선 힌트}
+
+🏅 이번 주 나이스 태스크
+{가장 도움이 된 가사를 1문장으로 칭찬}
+
+💡 내일의 원 액션
+{다음에 한 가지 도전하면 좋을 것}
+
+【톤 규칙】
+- 비난하지 않기, 따뜻한 말
+- 유머 10%까지
+- 전체 200~280자 이내
+- 이모지 4~7개
+- 설명이나 보충 없이 본문만 반환
+- 반드시 위 형식을 지킬 것`,
+    };
+    const prompt = weeklyPromptByLocale[locale] || weeklyPromptByLocale['ja'];
 
     console.log('📤 OpenAI APIリクエスト送信（ふりかえりレポート）');
 
-    // OpenAI APIでレポート生成
+    // OpenAI APIでレポート生成（多言語対応）
+    const weeklySystemByLocale = {
+      ja: 'あなたはパートナー同士の生活データをやさしく振り返るAIです。温かく・ユーモア少し・責めない口調で、家事分担のふりかえりレポートを作成します。',
+      en: 'You are an AI that warmly reviews household data between partners. Create a housework review report in a warm, slightly humorous, non-blaming tone.',
+      ko: '당신은 파트너 간의 생활 데이터를 따뜻하게 돌아보는 AI입니다. 따뜻하고, 약간의 유머, 비난하지 않는 어조로 가사 분담 리포트를 작성합니다.',
+    };
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
-          content: 'あなたはパートナー同士の生活データをやさしく振り返るAIです。温かく・ユーモア少し・責めない口調で、家事分担のふりかえりレポートを作成します。',
+          content: weeklySystemByLocale[locale] || weeklySystemByLocale['ja'],
         },
         {
           role: 'user',
@@ -602,61 +805,6 @@ exports.deleteUserData = functions.https.onCall(async (data, context) => {
   }
 });
 
-/**
- * 感謝カード通知送信
- * gratitudeMessagesコレクションに新規ドキュメントが作成されたときに実行
- */
-exports.sendGratitudeNotification = functions.firestore
-  .document('gratitudeMessages/{messageId}')
-  .onCreate(async (snap, context) => {
-    const data = snap.data();
-    const message = data.message || '(メッセージ内容なし)';
-    const toUserId = data.toUserId;
-    const fromName = data.fromName || '家族';
-    
-    console.log('💌 New gratitude message:', message, '→', toUserId);
-
-    try {
-      // FCMトークン取得
-      const userDoc = await admin.firestore().collection('users').doc(toUserId).get();
-      
-      if (!userDoc.exists) {
-        console.log('⚠️ User not found:', toUserId);
-        return null;
-      }
-
-      const token = userDoc.data()?.fcmToken;
-      
-      if (!token) {
-        console.log('⚠️ No FCM token found for user', toUserId);
-        return null;
-      }
-
-      // 通知内容
-      const payload = {
-        notification: {
-          title: `💖 ${fromName}さんから感謝メッセージ`,
-          body: message,
-        },
-        data: {
-          fromUserId: data.fromUserId || '',
-          toUserId: data.toUserId || '',
-          messageId: context.params.messageId,
-        },
-      };
-
-      // 通知送信
-      await admin.messaging().sendToDevice(token, payload);
-      console.log('✅ Notification sent to', toUserId);
-
-      return null;
-    } catch (error) {
-      console.error('❌ Error sending notification:', error);
-      // エラーが発生してもCloud Functionは成功として扱う
-      return null;
-    }
-  });
-
 // ========================================
 // FCM通知トリガー（パートナーアクション通知）
 // ========================================
@@ -715,16 +863,17 @@ exports.notifyTaskCreated = functions.firestore
         const userData = userDoc.data();
         if (userData.notificationsEnabled !== true) continue;
         if (userData.notifyPartnerActions !== true) continue;
-        
+
         const tokens = userData.fcmTokens || {};
         const tokenList = Object.keys(tokens).filter(t => tokens[t] === true);
-        
+
         if (tokenList.length === 0) continue;
-        
-        // 通知ペイロード
+
+        // 多言語対応通知ペイロード
+        const texts = getNotificationText(userData.locale || 'ja');
         const payload = {
           notification: {
-            title: `${actorName}さんが家事を記録しました`,
+            title: texts.taskTitle(actorName, data.task || data.category),
             body: `${data.task || data.category}`,
           },
           data: {
@@ -733,7 +882,7 @@ exports.notifyTaskCreated = functions.firestore
             docId: recordId,
           },
         };
-        
+
         // 複数トークンに送信
         const response = await admin.messaging().sendEachForMulticast({
           tokens: tokenList,
@@ -830,16 +979,18 @@ exports.notifyCostCreated = functions.firestore
         const userData = userDoc.data();
         if (userData.notificationsEnabled !== true) continue;
         if (userData.notifyPartnerActions !== true) continue;
-        
+
         const tokens = userData.fcmTokens || {};
         const tokenList = Object.keys(tokens).filter(t => tokens[t] === true);
-        
+
         if (tokenList.length === 0) continue;
-        
+
+        // 多言語対応通知ペイロード
+        const texts = getNotificationText(userData.locale || 'ja');
         const payload = {
           notification: {
-            title: `${actorName}さんがコストを記録しました`,
-            body: `¥${data.amount?.toLocaleString() || 0}`,
+            title: texts.costTitle(actorName),
+            body: texts.costBody(data.purpose || '', data.amount?.toLocaleString() || 0),
           },
           data: {
             type: 'cost',
@@ -847,7 +998,7 @@ exports.notifyCostCreated = functions.firestore
             docId: costId,
           },
         };
-        
+
         const response = await admin.messaging().sendEachForMulticast({
           tokens: tokenList,
           notification: payload.notification,
@@ -959,16 +1110,17 @@ exports.notifyLetterCreated = functions.firestore
         const userData = userDoc.data();
         if (userData.notificationsEnabled !== true) continue;
         if (userData.notifyPartnerActions !== true) continue;
-        
+
         const tokens = userData.fcmTokens || {};
         const tokenList = Object.keys(tokens).filter(t => tokens[t] === true);
-        
+
         if (tokenList.length === 0) continue;
-        
-        // 通知ペイロード
+
+        // 多言語対応通知ペイロード
+        const texts = getNotificationText(userData.locale || 'ja');
         const payload = {
           notification: {
-            title: `${fromName}さんからメッセージが届きました`,
+            title: texts.letterTitle(fromName),
             body: message.length > 50 ? `${message.substring(0, 50)}...` : message,
           },
           data: {
@@ -1070,14 +1222,15 @@ exports.notifyInactiveUsers = functions.pubsub
         
         const tokens = userData.fcmTokens || {};
         const tokenList = Object.keys(tokens).filter(t => tokens[t] === true);
-        
+
         if (tokenList.length === 0) continue;
-        
-        // 通知ペイロード
+
+        // 多言語対応通知ペイロード
+        const texts = getNotificationText(userData.locale || 'ja');
         const payload = {
           notification: {
-            title: 'そろそろ、今日の分を10秒で',
-            body: '',
+            title: texts.inactivityTitle,
+            body: texts.inactivityBody,
           },
           data: {
             type: 'inactivity',

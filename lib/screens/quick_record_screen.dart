@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../l10n/app_localizations.dart';
 import '../services/firestore_service.dart';
 import '../constants/famica_colors.dart';
 import '../widgets/famica_header.dart';
@@ -19,6 +20,8 @@ class QuickRecordScreen extends StatefulWidget {
 class _QuickRecordScreenState extends State<QuickRecordScreen> {
   final _firestoreService = FirestoreService();
   bool _isLoading = true;
+
+  AppLocalizations get l => AppLocalizations.of(context)!;
 
   @override
   void initState() {
@@ -39,16 +42,21 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: CircularProgressIndicator(color: FamicaColors.accent),
+    return Container(
+      decoration: const BoxDecoration(gradient: FamicaColors.appBackgroundGradient),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Center(
+          child: CircularProgressIndicator(color: FamicaColors.accent),
+        ),
       ),
     );
     }
 
-    return Scaffold(
-      backgroundColor: Colors.white,
+    return Container(
+      decoration: const BoxDecoration(gradient: FamicaColors.appBackgroundGradient),
+      child: Scaffold(
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -56,24 +64,25 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
             children: [
               // ヘッダー
               _buildHeader(),
-              
+
               // 今日のがんばり
               _buildTodayStats(),
-              
+
               // クイック記録
               _buildQuickRecordSection(),
-              
+
               // コスト記録ボタン
               _buildCostRecordButton(),
-              
+
               // 最近の記録
               _buildRecentRecords(),
-              
+
               const SizedBox(height: 80), // ボトムナビ用スペース
             ],
           ),
         ),
       ),
+    ),
     );
   }
 
@@ -90,7 +99,7 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'ふたりのがんばりを10秒で記録',
+            l.appTagline,
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[600],
@@ -115,9 +124,9 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
         final stats = snapshot.data ?? {};
         final myCount = stats['myCount'] ?? 0;
         final partnerCount = stats['partnerCount'] ?? 0;
-        final myName = stats['myName'] ?? 'あなた';
-        final partnerName = stats['partnerName'] ?? 'パートナー';
-        
+        final myName = stats['myName'] ?? l.you;
+        final partnerName = stats['partnerName'] ?? l.partner;
+
         final now = DateTime.now();
         final dateStr = '${now.year}/${now.month.toString().padLeft(2, '0')}/${now.day.toString().padLeft(2, '0')}';
 
@@ -129,9 +138,9 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    '今日のがんばり',
-                    style: TextStyle(
+                  Text(
+                    l.quickRecordTodayEffort,
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -152,25 +161,36 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFCE4EC),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFFB6C8), Color(0xFFFF8FAB)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                         borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFF75B2).withValues(alpha: 0.25),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: Column(
                         children: [
                           Text(
-                            '$myCount回',
-                            style: TextStyle(
+                            l.quickRecordCountTimes(myCount),
+                            style: const TextStyle(
                               fontSize: 36,
                               fontWeight: FontWeight.bold,
-                              color: FamicaColors.accent,
+                              color: Colors.white,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             myName,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 14,
-                              color: Colors.grey[700],
+                              color: Colors.white,
                             ),
                           ),
                         ],
@@ -182,25 +202,36 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE3F2FD),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF90CAF9), Color(0xFF5A8BFF)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                         borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF5A8BFF).withValues(alpha: 0.25),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: Column(
                         children: [
                           Text(
-                            '$partnerCount回',
+                            l.quickRecordCountTimes(partnerCount),
                             style: const TextStyle(
                               fontSize: 36,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF2196F3),
+                              color: Colors.white,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             partnerName,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 14,
-                              color: Colors.grey[700],
+                              color: Colors.white,
                             ),
                           ),
                         ],
@@ -225,26 +256,27 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'クイック記録',
-                style: TextStyle(
+              Text(
+                l.quickRecord,
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               GestureDetector(
                 onTap: () async {
+                  print('📝 [QuickRecord] カテゴリ編集画面へ遷移');
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const CategoryCustomizeScreen(),
                     ),
                   );
-                  // カスタマイズ画面から戻ったら再読み込み
-                  setState(() {});
+                  // StreamBuilderが自動的に更新されるため、setStateは不要
+                  print('🔙 [QuickRecord] カテゴリ編集画面から戻った（Streamが自動更新）');
                 },
                 child: Text(
-                  'パネルの編集',
+                  l.quickRecordPanelEdit,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -262,8 +294,8 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
   }
 
   Widget _buildQuickButtons() {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _firestoreService.getUserCustomCategories(),
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _firestoreService.getUserCustomCategoriesStream(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -271,13 +303,24 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
 
         if (snapshot.hasError) {
           return Center(
-            child: Text('エラー: ${snapshot.error}'),
+            child: Text(l.quickRecordError(snapshot.error.toString())),
           );
         }
 
         // カスタムカテゴリまたはデフォルトカテゴリを取得
         final categories = snapshot.data ?? [];
-        
+
+        // 🔍 DEBUG LOG: Stream購読情報
+        print('📡 [STREAM] クイック記録画面 StreamBuilder rebuild');
+        print('📡 [STREAM] カテゴリ総数: ${categories.length}件');
+        print('📡 [STREAM] カテゴリID一覧:');
+        for (var cat in categories) {
+          final id = cat['id'] as String? ?? '';
+          final name = cat['name'] as String? ?? '';
+          final isVisible = cat['isVisible'] as bool? ?? true;
+          print('  - id: $id, name: $name, isVisible: $isVisible');
+        }
+
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -292,7 +335,7 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
             final category = categories[index];
             return _buildQuickButton(
               emoji: category['emoji'] as String? ?? '📝',
-              task: category['name'] as String? ?? 'タスク',
+              task: category['name'] as String? ?? l.task,
               minutes: category['defaultMinutes'] as int? ?? 30,
               color: Colors.white,
             );
@@ -339,7 +382,7 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
               ),
             ),
             Text(
-              '$minutes分',
+              l.quickRecordMinutes(minutes),
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[700],
@@ -361,9 +404,9 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                '最近の記録',
-                style: TextStyle(
+              Text(
+                l.quickRecordRecentRecords,
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
@@ -378,7 +421,7 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
                   );
                 },
                 child: Text(
-                  'すべて見る',
+                  l.quickRecordSeeAll,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -403,7 +446,7 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
 
               if (snapshot.hasError) {
                 return Center(
-                  child: Text('エラー: ${snapshot.error}'),
+                  child: Text(l.quickRecordError(snapshot.error.toString())),
                 );
               }
 
@@ -416,7 +459,7 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
                   ),
                   child: Center(
                     child: Text(
-                      'まだ記録がありません',
+                      l.quickRecordNoRecords,
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[600],
@@ -434,8 +477,8 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
                     child: _buildRecentRecordItem(
-                      data['task'] ?? 'タスク',
-                      data['memberName'] ?? '名無し',
+                      data['task'] ?? l.task,
+                      data['memberName'] ?? l.quickRecordNoName,
                       data['timeMinutes'] ?? 0,
                       data['thankedBy']?.length ?? 0,
                       data['createdAt'] as Timestamp?,
@@ -472,7 +515,7 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
     {String? recordId, List? thankedBy}
   ) {
     // 経過時間を計算
-    String timeAgo = '今';
+    String timeAgo = l.now;
     if (createdAt != null) {
       final now = DateTime.now();
       final recordTime = createdAt.toDate();
@@ -535,7 +578,7 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
             ),
           ),
           Text(
-            '$timeMinutes分',
+            l.quickRecordMinutes(timeMinutes),
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
@@ -558,15 +601,15 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
                       .collection('records')
                       .doc(recordId)
                       .get();
-                  
+
                   final toUserId = recordDoc.data()?['memberId'] as String? ?? '';
-                  
+
                   await _firestoreService.addThanks(recordId, toUserId: toUserId);
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('💗 ありがとうを送りました'),
-                        duration: Duration(seconds: 2),
+                      SnackBar(
+                        content: Text(l.quickRecordThanks),
+                        duration: const Duration(seconds: 2),
                       ),
                     );
                   }
@@ -574,7 +617,7 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('エラー: $e'),
+                        content: Text(l.quickRecordError(e.toString())),
                         backgroundColor: Colors.red,
                       ),
                     );
@@ -591,7 +634,7 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
   void _showTimeSelectionDialog(String task, int defaultMinutes) {
     final timeOptions = [5, 10, 15, 20, 30, 45, 60, 90, 120];
     final emoji = _getTaskEmoji(task);
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -620,10 +663,10 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ 記録を追加しました！'),
+          SnackBar(
+            content: Text(l.quickRecordAdded),
             backgroundColor: FamicaColors.success,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -631,7 +674,7 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('エラー: $e'),
+            content: Text(l.quickRecordError(e.toString())),
             backgroundColor: FamicaColors.error,
           ),
         );
@@ -648,7 +691,7 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
             context: context,
             builder: (context) => const CostRecordScreen(),
           );
-          
+
           // モーダルから戻ってきたら画面を更新
           if (result == true && mounted) {
             setState(() {});
@@ -672,9 +715,9 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
             children: [
               const Text('💰', style: TextStyle(fontSize: 24)),
               const SizedBox(width: 12),
-              const Text(
-                'コストを記録する',
-                style: TextStyle(
+              Text(
+                l.quickRecordCostRecord,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -713,6 +756,8 @@ class _ModernTimeSelectionSheetState extends State<_ModernTimeSelectionSheet>
   late AnimationController _animationController;
   late Animation<double> _animation;
   int? _selectedMinutes;
+
+  AppLocalizations get l => AppLocalizations.of(context)!;
 
   @override
   void initState() {
@@ -777,7 +822,7 @@ class _ModernTimeSelectionSheetState extends State<_ModernTimeSelectionSheet>
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              
+
               // ヘッダー
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
@@ -828,7 +873,7 @@ class _ModernTimeSelectionSheetState extends State<_ModernTimeSelectionSheet>
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '時間を選択',
+                            l.quickRecordSelectTime,
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[600],
@@ -857,7 +902,7 @@ class _ModernTimeSelectionSheetState extends State<_ModernTimeSelectionSheet>
                   ],
                 ),
               ),
-              
+
               // 時間リスト
               Flexible(
                 child: ListView.builder(
@@ -867,7 +912,7 @@ class _ModernTimeSelectionSheetState extends State<_ModernTimeSelectionSheet>
                   itemBuilder: (context, index) {
                     final minutes = widget.timeOptions[index];
                     final isSelected = minutes == _selectedMinutes;
-                    
+
                     return _TimeOptionItem(
                       minutes: minutes,
                       isSelected: isSelected,
@@ -910,6 +955,8 @@ class _TimeOptionItem extends StatefulWidget {
 
 class _TimeOptionItemState extends State<_TimeOptionItem> {
   bool _isPressed = false;
+
+  AppLocalizations get l => AppLocalizations.of(context)!;
 
   @override
   Widget build(BuildContext context) {
@@ -969,7 +1016,7 @@ class _TimeOptionItemState extends State<_TimeOptionItem> {
                 ],
                 Expanded(
                   child: Text(
-                    '${widget.minutes}分',
+                    l.quickRecordMinutes(widget.minutes),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w500,

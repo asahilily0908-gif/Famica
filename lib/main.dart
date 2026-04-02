@@ -15,6 +15,7 @@ import 'services/fcm_service.dart';
 import 'services/att_service.dart';
 import 'models/user_model.dart';
 import 'theme/app_theme.dart';
+import 'l10n/app_localizations.dart';
 
 // ========================================
 // FCM バックグラウンドハンドラー（トップレベル関数）
@@ -136,13 +137,12 @@ class MyApp extends StatelessWidget {
       routerConfig: AppRouter.router,
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
+        AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('ja', 'JP'),
-      ],
+      supportedLocales: AppLocalizations.supportedLocales,
     );
   }
 }
@@ -159,6 +159,17 @@ class AuthGate extends ConsumerStatefulWidget {
 class _AuthGateState extends ConsumerState<AuthGate> {
   final _firestoreService = FirestoreService();
   bool _isInitialized = false;
+
+  Future<void> _saveLocale(User user) async {
+    try {
+      final locale = WidgetsBinding.instance.platformDispatcher.locale.languageCode;
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'locale': locale,
+      }, SetOptions(merge: true));
+    } catch (e) {
+      print('⚠️ locale保存エラー: $e');
+    }
+  }
 
   Future<void> _ensureSetup(User user) async {
     if (_isInitialized) return;
@@ -190,6 +201,8 @@ class _AuthGateState extends ConsumerState<AuthGate> {
     // authStateProviderを監視
     final authState = ref.watch(authStateProvider);
     
+    final l = AppLocalizations.of(context)!;
+
     return authState.when(
       data: (user) {
         if (user == null) {
@@ -207,6 +220,7 @@ class _AuthGateState extends ConsumerState<AuthGate> {
               // usersドキュメントが存在しない場合は初期セットアップを実行
               if (!_isInitialized) {
                 _ensureSetup(user);
+                _saveLocale(user);
                 return Scaffold(
                   body: Center(
                     child: Column(
@@ -214,10 +228,10 @@ class _AuthGateState extends ConsumerState<AuthGate> {
                       children: [
                         const CircularProgressIndicator(color: AppTheme.primaryPink),
                         const SizedBox(height: 16),
-                        const Text('初期セットアップ中...'),
+                        Text(l.mainInitSetup),
                         const SizedBox(height: 8),
                         Text(
-                          'ユーザー情報を作成しています',
+                          l.mainCreatingUser,
                           style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                         ),
                       ],
@@ -233,7 +247,7 @@ class _AuthGateState extends ConsumerState<AuthGate> {
                     children: [
                       const CircularProgressIndicator(color: AppTheme.primaryPink),
                       const SizedBox(height: 16),
-                      const Text('ユーザー情報を読み込み中...'),
+                      Text(l.mainLoadingUser),
                     ],
                   ),
                 ),
@@ -251,10 +265,10 @@ class _AuthGateState extends ConsumerState<AuthGate> {
                     children: [
                       const CircularProgressIndicator(color: AppTheme.primaryPink),
                       const SizedBox(height: 16),
-                      const Text('世帯情報を準備中...'),
+                      Text(l.mainPreparingHousehold),
                       const SizedBox(height: 8),
                       Text(
-                        'householdIdの設定を待機しています',
+                        l.mainWaitingHousehold,
                         style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
@@ -291,7 +305,7 @@ class _AuthGateState extends ConsumerState<AuthGate> {
                     children: [
                       const Icon(Icons.error, size: 64, color: Colors.red),
                       const SizedBox(height: 16),
-                      const Text('エラーが発生しました'),
+                      Text(l.mainErrorOccurred),
                       const SizedBox(height: 8),
                       Text(
                         '$error',
@@ -303,7 +317,7 @@ class _AuthGateState extends ConsumerState<AuthGate> {
                         onPressed: () async {
                           await FirebaseAuth.instance.signOut();
                         },
-                        child: const Text('ログアウト'),
+                        child: Text(l.logout),
                       ),
                     ],
                   ),
@@ -323,7 +337,7 @@ class _AuthGateState extends ConsumerState<AuthGate> {
             children: [
               const Icon(Icons.error, size: 64, color: Colors.red),
               const SizedBox(height: 16),
-              Text('認証エラー: $error'),
+              Text('${l.mainAuthError}: $error'),
             ],
           ),
         ),

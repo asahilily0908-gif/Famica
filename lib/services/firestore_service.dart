@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'invite_service.dart';
 
 /// Famica v3.0 Firestoreサービス
 /// households/{householdId} ベースのデータ構造に対応
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final InviteService _inviteService = InviteService();
 
   // 現在のユーザーのhouseholdIdを取得
   Future<String?> getCurrentUserHouseholdId() async {
@@ -70,23 +72,29 @@ class FirestoreService {
           .get();
 
       if (!householdDoc.exists) {
-        // 新規作成
+        // 新規作成（安全なコード生成 + Firestore重複チェック）
+        final inviteCode = await _inviteService.generateUniqueInviteCode();
+
         await _firestore.collection('households').doc(householdId).set({
           'name': name,
-          'inviteCode': _generateInviteCode(),
+          'inviteCode': inviteCode,
           'lifeStage': lifeStage,
           'members': [
             {
               'uid': uid,
               'name': memberName,
-              'nickname': memberName, // nicknameフィールドを追加
+              'nickname': memberName,
               'role': role,
               'avatar': 'https://api.dicebear.com/7.x/avataaars/svg?seed=$memberName',
             }
           ],
           'createdAt': FieldValue.serverTimestamp(),
         });
-        print('✅ household作成: $householdId (member: $memberName)');
+
+        // inviteCodesコレクションにも登録
+        await _inviteService.createInviteCodeDocument(inviteCode, householdId);
+
+        print('✅ household作成: $householdId (inviteCode: $inviteCode)');
       } else {
         // 既存の世帯にメンバーを追加（重複チェック）
         final members = List<Map<String, dynamic>>.from(
@@ -651,19 +659,6 @@ class FirestoreService {
     }
 
     yield* query.snapshots();
-  }
-
-  // 招待コード生成（8-10桁の英数字・セキュリティ強化版）
-  String _generateInviteCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 紛らわしい文字を除外
-    final random = DateTime.now().millisecondsSinceEpoch; // シード値
-    // 8-10桁のランダムな長さ（推測不可能性を高める）
-    final length = 8 + (random % 3); // 8, 9, or 10
-    String code = '';
-    for (int i = 0; i < length; i++) {
-      code += chars[(random + i * 7) % chars.length];
-    }
-    return code;
   }
 
   // 招待コードからhouseholdを検索
@@ -1305,6 +1300,81 @@ class FirestoreService {
     }
   }
 
+  /// ユーザーのカスタムカテゴリをStreamで取得（リアルタイム同期用）
+  Stream<List<Map<String, dynamic>>> getUserCustomCategoriesStream() async* {
+    final user = _auth.currentUser;
+    if (user == null) {
+      // 認証されていない場合はデフォルトカテゴリを返す
+      yield _getDefaultCategoriesAsMap();
+      return;
+    }
+
+    try {
+      // デフォルトカテゴリを取得
+      final defaultCategories = _getDefaultCategoriesAsMap();
+      
+      // 🔍 DEBUG LOG: Stream購読パス
+      final streamPath = 'users/${user.uid}/customCategories';
+      print('📡 [STREAM_SETUP] 購読パス: $streamPath');
+      print('📡 [STREAM_SETUP] クエリ条件: where(isVisible == true).orderBy(order)');
+      
+      // カスタムカテゴリをStreamで監視
+      yield* _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('customCategories')
+          .where('isVisible', isEqualTo: true)
+          .orderBy('order')
+          .snapshots()
+          .map((snapshot) {
+        
+        // 🔍 DEBUG LOG: Snapshotの内容
+        print('📡 [STREAM_DATA] Snapshot受信: ${snapshot.docs.length}件');
+        print('📡 [STREAM_DATA] ドキュメントID一覧:');
+        for (var doc in snapshot.docs) {
+          final data = doc.data();
+          print('  - ${doc.id}: name=${data['name']}, isVisible=${data['isVisible']}');
+        }
+        
+        if (snapshot.docs.isEmpty) {
+          // カスタムカテゴリがない場合はデフォルトのみを返す
+          return defaultCategories;
+        }
+
+        // カスタムカテゴリをMapに変換
+        final customCategories = snapshot.docs.map((doc) {
+          final data = doc.data();
+          return {
+            'id': doc.id,
+            'name': data['name'] as String? ?? '',
+            'emoji': data['emoji'] as String? ?? '📝',
+            'defaultMinutes': data['defaultMinutes'] as int? ?? 30,
+            'isVisible': data['isVisible'] as bool? ?? true,
+            'order': data['order'] as int? ?? 0,
+            'overridesDefaultId': data['overridesDefaultId'] as String?,
+          };
+        }).toList();
+
+        // 上書きされたデフォルトカテゴリのIDを収集
+        final overriddenDefaultIds = customCategories
+            .where((c) => c['overridesDefaultId'] != null)
+            .map((c) => c['overridesDefaultId'] as String)
+            .toSet();
+
+        // 上書きされていないデフォルトカテゴリのみをフィルタリング
+        final filteredDefaultCategories = defaultCategories
+            .where((cat) => !overriddenDefaultIds.contains(cat['id']))
+            .toList();
+
+        // フィルタ済みデフォルト + カスタムを結合して返す
+        return [...filteredDefaultCategories, ...customCategories];
+      });
+    } catch (e) {
+      print('❌ カスタムカテゴリStream取得エラー: $e');
+      yield _getDefaultCategoriesAsMap();
+    }
+  }
+
   /// デフォルトカテゴリをMap形式で返す
   List<Map<String, dynamic>> _getDefaultCategoriesAsMap() {
     return [
@@ -1400,45 +1470,74 @@ class FirestoreService {
     if (householdId == null) throw Exception('世帯IDが取得できません');
 
     try {
-      // まず、カテゴリ名を取得
-      final categoryDoc = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('customCategories')
-          .doc(categoryId)
-          .get();
+      // デフォルトカテゴリ（default_で始まる）かどうかを判定
+      final isDefaultCategory = categoryId.startsWith('default_');
+
+      // 🔍 DEBUG LOG: 削除対象の情報
+      final deletePath = 'users/${user.uid}/customCategories/$categoryId';
+      print('🗑️ [DELETE] 削除対象docId: $categoryId');
+      print('🗑️ [DELETE] 削除対象パス: $deletePath');
+      print('🗑️ [DELETE] isDefaultCategory: $isDefaultCategory');
 
       String? categoryName;
-      if (categoryDoc.exists) {
-        categoryName = categoryDoc.data()?['name'] as String?;
-      }
 
-      // カスタムカテゴリを削除
-      await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('customCategories')
-          .doc(categoryId)
-          .delete();
-
-      print('✅ カスタムカテゴリ削除: $categoryId (name: $categoryName)');
-
-      // そのカテゴリに紐づくすべてのrecordsを削除
-      if (categoryName != null && categoryName.isNotEmpty) {
-        final recordsSnapshot = await _firestore
-            .collection('households')
-            .doc(householdId)
-            .collection('records')
-            .where('category', isEqualTo: categoryName)
+      if (isDefaultCategory) {
+        // デフォルトカテゴリの場合：isVisible=falseのカスタムカテゴリを作成して非表示化
+        print('🗑️ [DELETE] 操作: デフォルトカテゴリを非表示化（isVisible=false）');
+        
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('customCategories')
+            .add({
+          'isVisible': false,
+          'overridesDefaultId': categoryId,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+        
+        print('✅ デフォルトカテゴリを非表示化: $categoryId');
+      } else {
+        // カスタムカテゴリの場合：通常のハード削除
+        final categoryDoc = await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('customCategories')
+            .doc(categoryId)
             .get();
 
-        final batch = _firestore.batch();
-        for (var doc in recordsSnapshot.docs) {
-          batch.delete(doc.reference);
+        if (categoryDoc.exists) {
+          categoryName = categoryDoc.data()?['name'] as String?;
         }
-        await batch.commit();
 
-        print('✅ カテゴリ「$categoryName」に紐づく${recordsSnapshot.docs.length}件のレコードを削除しました');
+        print('🗑️ [DELETE] カテゴリ名: $categoryName');
+        print('🗑️ [DELETE] 操作: doc.delete() (ハード削除)');
+
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('customCategories')
+            .doc(categoryId)
+            .delete();
+
+        print('✅ カスタムカテゴリ削除完了: $categoryId (name: $categoryName)');
+
+        // そのカテゴリに紐づくすべてのrecordsを削除
+        if (categoryName != null && categoryName.isNotEmpty) {
+          final recordsSnapshot = await _firestore
+              .collection('households')
+              .doc(householdId)
+              .collection('records')
+              .where('category', isEqualTo: categoryName)
+              .get();
+
+          final batch = _firestore.batch();
+          for (var doc in recordsSnapshot.docs) {
+            batch.delete(doc.reference);
+          }
+          await batch.commit();
+
+          print('✅ カテゴリ「$categoryName」に紐づく${recordsSnapshot.docs.length}件のレコードを削除しました');
+        }
       }
     } catch (e) {
       print('❌ カスタムカテゴリ削除エラー: $e');

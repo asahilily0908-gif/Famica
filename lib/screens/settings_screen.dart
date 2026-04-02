@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // kDebugMode用
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -24,6 +25,8 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   final TextEditingController _nicknameController = TextEditingController();
+
+  AppLocalizations get l => AppLocalizations.of(context)!;
 
   // 法務ページのURL
   static const String _privacyPolicyUrl = 'https://careful-ear-c48.notion.site/Famica-2ae091d63f5a8040b56eef4f659ab262';
@@ -72,21 +75,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildHeader(),
-              _buildPremiumFeatures(),
-              _buildSettingsList(),
-              const SizedBox(height: 16),
-              _buildDebugSection(),
-              _buildDeleteAccountButton(),
-              const SizedBox(height: 80), // ボトムナビ用スペース
-            ],
+    return Container(
+      decoration: const BoxDecoration(gradient: FamicaColors.appBackgroundGradient),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildHeader(),
+                _buildPremiumFeatures(),
+                _buildSettingsList(),
+                const SizedBox(height: 16),
+                _buildDebugSection(),
+                _buildDeleteAccountButton(),
+                const SizedBox(height: 80), // ボトムナビ用スペース
+              ],
+            ),
           ),
         ),
       ),
@@ -105,7 +111,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'ふたりのがんばりを10秒で記録',
+            l.appTagline,
             style: AppTextStyles.bodyMedium.copyWith(
               color: Colors.grey[600],
             ),
@@ -126,7 +132,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           _buildSettingsItem(
             icon: Icons.group_add,
-            title: 'パートナーを招待',
+            title: l.settingsInvitePartner,
             onTap: () {
               Navigator.push(
                 context,
@@ -139,7 +145,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(height: 1, indent: 56),
           _buildSettingsItem(
             icon: Icons.person,
-            title: 'ニックネーム変更',
+            title: l.settingsChangeNickname,
             onTap: () => _showNicknameEditBottomSheet(),
           ),
         ],
@@ -158,25 +164,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           _buildSettingsItem(
             icon: Icons.privacy_tip_outlined,
-            title: 'プライバシーポリシー',
+            title: l.settingsPrivacyPolicy,
             onTap: () => _launchUrl(_privacyPolicyUrl),
           ),
           const Divider(height: 1, indent: 56),
           _buildSettingsItem(
             icon: Icons.help_outline,
-            title: 'ヘルプ・お問い合わせ',
+            title: l.settingsHelp,
             onTap: () => _launchUrl(_helpUrl),
           ),
           const Divider(height: 1, indent: 56),
           _buildSettingsItem(
             icon: Icons.description_outlined,
-            title: '利用規約',
+            title: l.settingsTerms,
             onTap: () => _launchUrl(_termsOfServiceUrl),
           ),
           const Divider(height: 1, indent: 56),
           _buildSettingsItem(
             icon: Icons.logout,
-            title: 'ログアウト',
+            title: l.logout,
             onTap: _showLogoutDialog,
             textColor: FamicaColors.error,
           ),
@@ -200,7 +206,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: _buildSettingsItem(
         icon: Icons.bug_report,
         title: 'Notification Debug (Debug)',
-        subtitle: '開発者向け通知診断',
+        subtitle: l.settingsNotificationDebug,
         onTap: () {
           Navigator.push(
             context,
@@ -221,7 +227,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: ElevatedButton.icon(
           onPressed: _showDeleteAccountDialog,
           icon: const Icon(Icons.delete_forever),
-          label: const Text('アカウント削除'),
+          label: Text(l.settingsDeleteAccount),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.red[50],
             foregroundColor: FamicaColors.error,
@@ -257,18 +263,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.warning_amber_rounded,
                         color: Colors.orange,
                         size: 26,
                       ),
-                      SizedBox(width: 10),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'アカウントを削除しますか？',
-                          style: TextStyle(
+                          l.settingsDeleteConfirm,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             height: 1.3,
@@ -278,9 +284,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  const Text(
-                    '削除すると、以下の情報が完全に削除されます',
-                    style: TextStyle(
+                  Text(
+                    l.settingsDeleteWarning,
+                    style: const TextStyle(
                       fontSize: 15,
                       height: 1.45,
                       color: Colors.black87,
@@ -289,20 +295,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.only(left: 8),
-                    child: const Column(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '• すべての記録データ',
-                          style: TextStyle(
+                          l.settingsDeleteRecords,
+                          style: const TextStyle(
                             fontSize: 15,
                             height: 1.45,
                             color: Colors.black87,
                           ),
                         ),
                         Text(
-                          '• パートナー共有情報',
-                          style: TextStyle(
+                          l.settingsDeletePartner,
+                          style: const TextStyle(
                             fontSize: 15,
                             height: 1.45,
                             color: Colors.black87,
@@ -319,18 +325,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       color: const Color(0xFFFFEBEE),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.error_outline,
                           color: Color(0xFFD32F2F),
                           size: 20,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'この操作は元に戻せません',
-                            style: TextStyle(
+                            l.settingsDeleteIrreversible,
+                            style: const TextStyle(
                               fontSize: 15,
                               height: 1.45,
                               color: Color(0xFFD32F2F),
@@ -348,7 +354,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () => Navigator.pop(dialogContext, false),
-                          child: const Text('キャンセル'),
+                          child: Text(l.cancel),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -358,7 +364,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             backgroundColor: FamicaColors.error,
                           ),
                           onPressed: () => Navigator.pop(dialogContext, true),
-                          child: const Text('削除する'),
+                          child: Text(l.settingsDeleteButton),
                         ),
                       ),
                     ],
@@ -385,16 +391,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(
+      builder: (_) => Center(
         child: Card(
           child: Padding(
-            padding: EdgeInsets.all(20),
+            padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('アカウントを削除しています...'),
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(l.settingsDeleting),
               ],
             ),
           ),
@@ -405,7 +411,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        throw Exception('ユーザーが見つかりません');
+        throw Exception(l.settingsDeleteUserNotFound);
       }
 
       debugPrint('[DeleteAccount] reloading user token...');
@@ -419,7 +425,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           .call({'uid': uid});
 
       if (result.data == null || result.data['success'] != true) {
-        throw Exception('Firestoreデータの削除に失敗しました');
+        throw Exception(l.settingsDeleteFirestoreFailed);
       }
 
       debugPrint('[DeleteAccount] Firestore data deleted');
@@ -453,7 +459,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('削除に失敗しました: ${e.message}'),
+              content: Text('${l.settingsDeleteFailed}: ${e.message}'),
               backgroundColor: FamicaColors.error,
               duration: const Duration(seconds: 4),
             ),
@@ -470,7 +476,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('削除に失敗しました: ${e.toString()}'),
+            content: Text('${l.settingsDeleteFailed}: ${e.toString()}'),
             backgroundColor: FamicaColors.error,
             duration: const Duration(seconds: 4),
           ),
@@ -487,7 +493,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final providerData = user.providerData;
     if (providerData.isEmpty) {
       debugPrint('[DeleteAccount] no provider found');
-      _showReauthErrorDialog('認証プロバイダーが見つかりません');
+      _showReauthErrorDialog(l.settingsAuthProviderNotFound);
       return;
     }
 
@@ -522,16 +528,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return;
       } else if (providerId == 'password') {
         debugPrint('[DeleteAccount] email/password provider detected');
-        _showReauthErrorDialog(
-          'メール/パスワードでログインしている場合は、\n'
-          '一度ログアウトして再ログイン後に\n'
-          'アカウント削除を実行してください。'
-        );
+        _showReauthErrorDialog(l.settingsReauthInstruction);
         return;
       }
 
       debugPrint('[DeleteAccount] unsupported provider: $providerId');
-      _showReauthErrorDialog('サポートされていない認証方法です');
+      _showReauthErrorDialog(l.settingsUnsupportedAuth);
 
     } on FirebaseAuthException catch (e) {
       debugPrint('[DeleteAccount] reauth failed: ${e.code}');
@@ -543,7 +545,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('再認証に失敗しました: ${e.message}'),
+            content: Text('${l.settingsReauthFailed}: ${e.message}'),
             backgroundColor: FamicaColors.error,
             duration: const Duration(seconds: 4),
           ),
@@ -555,7 +557,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('再認証中にエラーが発生しました: $e'),
+            content: Text('${l.settingsReauthError}: $e'),
             backgroundColor: FamicaColors.error,
             duration: const Duration(seconds: 4),
           ),
@@ -573,16 +575,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(
+      builder: (_) => Center(
         child: Card(
           child: Padding(
-            padding: EdgeInsets.all(20),
+            padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('アカウントを削除しています...'),
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(l.settingsDeleting),
               ],
             ),
           ),
@@ -593,7 +595,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        throw Exception('ユーザーが見つかりません');
+        throw Exception(l.settingsDeleteUserNotFound);
       }
 
       final uid = user.uid;
@@ -604,7 +606,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           .call({'uid': uid});
 
       if (result.data == null || result.data['success'] != true) {
-        throw Exception('Firestoreデータの削除に失敗しました');
+        throw Exception(l.settingsDeleteFirestoreFailed);
       }
 
       debugPrint('[DeleteAccount] Firestore data deleted (retry)');
@@ -632,7 +634,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('削除に失敗しました: ${e.toString()}'),
+            content: Text('${l.settingsDeleteFailed}: ${e.toString()}'),
             backgroundColor: FamicaColors.error,
             duration: const Duration(seconds: 4),
           ),
@@ -646,12 +648,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('再認証が必要です'),
+        title: Text(l.settingsReauthRequired),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('キャンセル'),
+            child: Text(l.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -662,7 +664,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: FamicaColors.primary,
             ),
-            child: const Text('ログアウトする'),
+            child: Text(l.settingsLogoutButton),
           ),
         ],
       ),
@@ -718,17 +720,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'ログアウト',
-                style: TextStyle(
+              Text(
+                l.logout,
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'ログアウトしますか？\n再度ログインが必要になります。',
-                style: TextStyle(
+              Text(
+                l.settingsLogoutConfirm,
+                style: const TextStyle(
                   fontSize: 15,
                   height: 1.6,
                 ),
@@ -740,7 +742,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(dialogContext, false),
-                      child: const Text('キャンセル'),
+                      child: Text(l.cancel),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -751,7 +753,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         foregroundColor: Colors.white,
                       ),
                       onPressed: () => Navigator.pop(dialogContext, true),
-                      child: const Text('ログアウト'),
+                      child: Text(l.logout),
                     ),
                   ),
                 ],
@@ -788,13 +790,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.person, color: FamicaColors.primary),
-                  SizedBox(width: 8),
+                  const Icon(Icons.person, color: FamicaColors.primary),
+                  const SizedBox(width: 8),
                   Text(
-                    'ニックネーム変更',
-                    style: TextStyle(
+                    l.settingsNicknameChange,
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: FamicaColors.textDark,
@@ -806,7 +808,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextField(
                 controller: controller,
                 decoration: InputDecoration(
-                  hintText: 'ニックネームを入力',
+                  hintText: l.settingsNicknameInput,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -834,8 +836,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     
                     if (nickname.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('ニックネームを入力してください'),
+                        SnackBar(
+                          content: Text(l.settingsNicknameEmpty),
                           backgroundColor: FamicaColors.error,
                         ),
                       );
@@ -850,10 +852,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       if (mounted) {
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('✅ 変更を保存しました'),
+                          SnackBar(
+                            content: Text(l.settingsNicknameSaved),
                             backgroundColor: FamicaColors.success,
-                            duration: Duration(seconds: 2),
+                            duration: const Duration(seconds: 2),
                           ),
                         );
                       }
@@ -861,7 +863,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('❌ エラーが発生しました: $e'),
+                            content: Text('${l.settingsNicknameError}: $e'),
                             backgroundColor: FamicaColors.error,
                             duration: const Duration(seconds: 3),
                           ),
@@ -877,9 +879,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    '変更を保存',
-                    style: TextStyle(
+                  child: Text(
+                    l.settingsSaveChanges,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -888,7 +890,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'ℹ️ ニックネームは全画面で即時反映されます',
+                l.settingsNicknameNote,
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey[600],

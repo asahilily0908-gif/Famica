@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../l10n/app_localizations.dart';
 import '../constants/famica_colors.dart';
 
 /// アルバム画面（記録・感謝・記念日のタイムライン）
@@ -16,6 +17,8 @@ class _AlbumScreenState extends State<AlbumScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   String? _householdId;
   AlbumItemType? _selectedFilter;
+
+  AppLocalizations get l => AppLocalizations.of(context)!;
 
   @override
   void initState() {
@@ -40,32 +43,37 @@ class _AlbumScreenState extends State<AlbumScreen> {
   @override
   Widget build(BuildContext context) {
     if (_householdId == null) {
-      return Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          title: const Text(
-            'アルバム',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      return Container(
+        decoration: const BoxDecoration(gradient: FamicaColors.appBackgroundGradient),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            title: Text(
+              l.albumTitle,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            backgroundColor: Colors.transparent,
+            centerTitle: true,
+            elevation: 0,
+            foregroundColor: Colors.black,
           ),
-          backgroundColor: Colors.white,
-          centerTitle: true,
-          elevation: 0,
-          foregroundColor: Colors.black,
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(),
+          body: const Center(
+            child: CircularProgressIndicator(),
+          ),
         ),
       );
     }
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'ふたりのアルバム',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.white,
+    return Container(
+      decoration: const BoxDecoration(gradient: FamicaColors.appBackgroundGradient),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(
+            l.albumOurAlbum,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          backgroundColor: Colors.transparent,
         centerTitle: true,
         elevation: 0,
         foregroundColor: Colors.black,
@@ -78,27 +86,27 @@ class _AlbumScreenState extends State<AlbumScreen> {
               });
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: null,
-                child: Text('すべて'),
+                child: Text(l.all),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: AlbumItemType.record,
                 child: Row(
                   children: [
-                    Text('📝 ', style: TextStyle(fontSize: 20)),
-                    SizedBox(width: 8),
-                    Text('記録のみ'),
+                    const Text('📝 ', style: TextStyle(fontSize: 20)),
+                    const SizedBox(width: 8),
+                    Text(l.albumRecordsOnly),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: AlbumItemType.thanks,
                 child: Row(
                   children: [
-                    Text('❤️ ', style: TextStyle(fontSize: 20)),
-                    SizedBox(width: 8),
-                    Text('感謝のみ'),
+                    const Text('❤️ ', style: TextStyle(fontSize: 20)),
+                    const SizedBox(width: 8),
+                    Text(l.albumGratitudeOnly),
                   ],
                 ),
               ),
@@ -108,7 +116,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
       ),
       body: Column(
         children: [
-          
+
           Expanded(
             child: StreamBuilder<List<AlbumItem>>(
               stream: _getAlbumItems(),
@@ -120,7 +128,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
                       children: [
                         Icon(Icons.error, size: 64, color: FamicaColors.error),
                         const SizedBox(height: 16),
-                        Text('エラー: ${snapshot.error}'),
+                        Text(l.errorWithMessage(snapshot.error.toString())),
                       ],
                     ),
                   );
@@ -135,7 +143,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
                 }
 
                 final allItems = snapshot.data ?? [];
-                
+
                 // フィルター適用
                 final items = _selectedFilter == null
                     ? allItems
@@ -158,6 +166,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -173,7 +182,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'まだアルバムがありません',
+            l.albumNoItems,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -182,7 +191,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            '記録や感謝が\nアルバムに表示されます',
+            l.albumNoItemsDesc,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
@@ -216,10 +225,10 @@ class _AlbumScreenState extends State<AlbumScreen> {
       // 記録を追加
       for (final doc in recordsSnapshot.docs) {
         final data = doc.data();
-        final task = data['task'] ?? '記録';
+        final task = data['task'] ?? l.albumRecord;
         final timeMinutes = data['timeMinutes'] ?? 0;
         final memberName = data['memberName'] ?? '';
-        
+
         items.add(AlbumItem(
           id: doc.id,
           type: AlbumItemType.record,
@@ -247,7 +256,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
             id: doc.id,
             type: AlbumItemType.thanks,
             timestamp: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-            title: '感謝',
+            title: l.albumGratitude,
             description: data['message'] ?? '',
             icon: data['emoji'] ?? '❤️',
             data: data,
@@ -346,7 +355,7 @@ class _AlbumCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 16),
-            
+
             // コンテンツ
             Expanded(
               child: Column(
@@ -362,7 +371,7 @@ class _AlbumCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  
+
                   // 説明
                   if (item.description.isNotEmpty)
                     Text(
@@ -375,7 +384,7 @@ class _AlbumCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   const SizedBox(height: 8),
-                  
+
                   // タイムスタンプ
                   Row(
                     children: [

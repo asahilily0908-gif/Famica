@@ -56,9 +56,41 @@ class FamicaColors {
   static const Color shadowMedium = Color(0x1A000000); // ミディアムシャドウ
   static const Color shadowHeavy = Color(0x29000000); // ヘビーシャドウ
   static const Color overlay = Color(0x80000000); // オーバーレイ
-  
+
   // === UI専用カラー ===
   static const Color cardBackground = surface; // カード背景
+
+  // === グラスモーフィズム専用カラー ===
+  static const Color glassWhite = Color(0x80FFFFFF);         // 50%白
+  static const Color glassWhiteLight = Color(0x40FFFFFF);     // 25%白
+  static const Color glassWhiteBorder = Color(0x66FFFFFF);    // 40%白ボーダー
+  static const Color glassWhiteHeavy = Color(0xB3FFFFFF);     // 70%白（ナビバー用）
+
+  /// アプリ背景グラデーション（フラット白から置き換え）
+  static const LinearGradient appBackgroundGradient = LinearGradient(
+    colors: [
+      Color(0xFFFFF5F8), // 薄ピンク
+      Color(0xFFF5F0FF), // 薄ラベンダー
+      Color(0xFFEFF6FF), // 薄ブルー
+    ],
+    stops: [0.0, 0.5, 1.0],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
+  /// ガラスカード用シャドウ（ピンク色味）
+  static List<BoxShadow> get glassShadows => [
+    BoxShadow(
+      color: const Color(0x0AFF75B2), // ピンク色味シャドウ
+      blurRadius: 24,
+      offset: const Offset(0, 8),
+    ),
+    BoxShadow(
+      color: const Color(0x0A000000), // 微弱な黒シャドウ
+      blurRadius: 16,
+      offset: const Offset(0, 4),
+    ),
+  ];
   
   // === グラデーション（モダン＆エレガント） ===
   
