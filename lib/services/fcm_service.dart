@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -129,23 +130,29 @@ class FCMService {
       // iOS: 先にAPNSトークンを取得（重要）
       // ========================================
       if (defaultTargetPlatform == TargetPlatform.iOS) {
-        final apnsToken = await _messaging.getAPNSToken();
+        String? apnsToken = await _messaging.getAPNSToken();
         if (apnsToken != null) {
           print('🍎 APNSトークン取得成功: ${apnsToken.substring(0, 20)}...');
         } else {
           print('⚠️ APNSトークンを取得できませんでした');
           print('   → 実機で実行していることを確認してください');
           print('   → Xcodeで Push Notifications capability が有効か確認してください');
-          
+
           // APNSトークンがない場合、再試行（最大3回、1秒間隔）
           for (int i = 0; i < 3; i++) {
             await Future.delayed(const Duration(seconds: 1));
-            final retryToken = await _messaging.getAPNSToken();
-            if (retryToken != null) {
+            apnsToken = await _messaging.getAPNSToken();
+            if (apnsToken != null) {
               print('🍎 APNSトークン取得成功（再試行 ${i + 1}回目）');
               break;
             }
           }
+        }
+
+        // APNSトークンが取得できなかった場合、FCMトークンも無効になるため中断
+        if (apnsToken == null) {
+          print('❌ APNSトークン取得失敗: FCMトークンの取得をスキップします');
+          return;
         }
       }
 
@@ -316,21 +323,19 @@ class FCMService {
     // }
   }
 
-  /// ペイロードをエンコード（シンプルなJSON形式）
+  /// ペイロードをエンコード
   String _encodePayload(Map<String, dynamic> data) {
-    return data.entries.map((e) => '${e.key}:${e.value}').join(',');
+    return jsonEncode(data);
   }
 
   /// ペイロードをデコード
   Map<String, dynamic> _decodePayload(String payload) {
-    final map = <String, dynamic>{};
-    for (final pair in payload.split(',')) {
-      final parts = pair.split(':');
-      if (parts.length == 2) {
-        map[parts[0]] = parts[1];
-      }
+    try {
+      return Map<String, dynamic>.from(jsonDecode(payload) as Map);
+    } catch (e) {
+      print('⚠️ ペイロードデコードエラー: $e');
+      return {};
     }
-    return map;
   }
 
   // ========================================

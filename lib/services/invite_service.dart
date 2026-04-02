@@ -8,12 +8,11 @@ class InviteService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  /// 8-10桁のランダム招待コードを生成（セキュリティ強化）
+  /// 6桁のランダム招待コードを生成
   String generateInviteCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 紛らわしい文字を除外
     final random = Random();
-    // 8-10桁のランダムな長さ（推測不可能性を高める）
-    final length = 8 + random.nextInt(3); // 8, 9, or 10
+    const length = 6;
     return List.generate(length, (index) => chars[random.nextInt(chars.length)]).join();
   }
 

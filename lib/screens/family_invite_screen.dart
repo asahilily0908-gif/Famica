@@ -48,23 +48,35 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
       final inviteInfo = await _inviteService.getCurrentUserInviteInfo();
       final members = await _inviteService.getHouseholdMembers();
       
-      // 招待コードが存在しない場合は自動生成
+      // 招待コードが存在しない、または6桁でない場合は自動再生成
       String? inviteCode = inviteInfo?['inviteCode'];
       final householdId = inviteInfo?['householdId'];
-      
-      if (householdId != null && (inviteCode == null || inviteCode.isEmpty)) {
-        print('⚠️ 招待コードが存在しないため自動生成します');
+
+      if (householdId != null && (inviteCode == null || inviteCode.isEmpty || inviteCode.length != 6)) {
+        if (inviteCode != null && inviteCode.length != 6) {
+          print('⚠️ 招待コードが${inviteCode.length}桁のため6桁に再生成します');
+          // 古いinviteCodeドキュメントを削除
+          try {
+            await FirebaseFirestore.instance
+                .collection('inviteCodes')
+                .doc(inviteCode.toUpperCase())
+                .delete();
+          } catch (_) {}
+        } else {
+          print('⚠️ 招待コードが存在しないため自動生成します');
+        }
+
         inviteCode = await _inviteService.generateUniqueInviteCode();
-        
+
         // Firestoreに招待コードを保存
         await FirebaseFirestore.instance
             .collection('households')
             .doc(householdId)
             .update({'inviteCode': inviteCode});
-        
+
         // inviteCodesコレクションにもドキュメントを作成
         await _inviteService.createInviteCodeDocument(inviteCode, householdId);
-        
+
         print('✅ 招待コード生成完了: $inviteCode');
       }
       
@@ -112,8 +124,8 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
   Future<void> _joinHousehold() async {
     final inviteCode = _inviteCodeController.text.trim().toUpperCase();
     
-    if (inviteCode.length != 6) {
-      _showErrorDialog('招待コードは6桁です');
+    if (inviteCode.isEmpty) {
+      _showErrorDialog('招待コードを入力してください');
       return;
     }
 
@@ -171,47 +183,50 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        foregroundColor: Colors.black,
-        title: const Text(
-          'パートナーを招待',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+    return Container(
+      decoration: const BoxDecoration(gradient: FamicaColors.appBackgroundGradient),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          foregroundColor: Colors.black,
+          title: const Text(
+            'パートナーを招待',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
-      ),
-      body: SafeArea(
-        child: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(FamicaColors.primary),
-                ),
-              )
-            : SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    if (_myInviteCode != null) ...[
-                      _buildInviteCodeCard(),
-                      const SizedBox(height: 16),
-                      _buildMembersCard(),
-                      const SizedBox(height: 16),
+        body: SafeArea(
+          child: _isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(FamicaColors.primary),
+                  ),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      if (_myInviteCode != null) ...[
+                        _buildInviteCodeCard(),
+                        const SizedBox(height: 16),
+                        _buildMembersCard(),
+                        const SizedBox(height: 16),
+                      ],
+                      if (_showJoinCard) ...[
+                        _buildJoinHouseholdCard(),
+                        const SizedBox(height: 16),
+                      ],
+                      if (!_showJoinCard && _myInviteCode == null)
+                        _buildNoHouseholdCard(),
                     ],
-                    if (_showJoinCard) ...[
-                      _buildJoinHouseholdCard(),
-                      const SizedBox(height: 16),
-                    ],
-                    if (!_showJoinCard && _myInviteCode == null)
-                      _buildNoHouseholdCard(),
-                  ],
+                  ),
                 ),
-              ),
+        ),
       ),
     );
   }
@@ -441,7 +456,7 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
           const SizedBox(height: 20),
           TextField(
             controller: _inviteCodeController,
-            maxLength: 6,
+            maxLength: 10,
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 24,
