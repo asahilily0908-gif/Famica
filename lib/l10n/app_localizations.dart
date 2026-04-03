@@ -1575,6 +1575,90 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'たった今'**
   String get timeAgoJust;
+
+  /// No description provided for @timeAgoDays.
+  ///
+  /// In ja, this message translates to:
+  /// **'{days}日前'**
+  String timeAgoDays(int days);
+
+  /// No description provided for @timeAgoHours.
+  ///
+  /// In ja, this message translates to:
+  /// **'{hours}時間前'**
+  String timeAgoHours(int hours);
+
+  /// No description provided for @timeAgoMinutes.
+  ///
+  /// In ja, this message translates to:
+  /// **'{minutes}分前'**
+  String timeAgoMinutes(int minutes);
+
+  /// No description provided for @totalHours.
+  ///
+  /// In ja, this message translates to:
+  /// **'{hours}時間'**
+  String totalHours(String hours);
+
+  /// No description provided for @durationMinutes.
+  ///
+  /// In ja, this message translates to:
+  /// **'{minutes}分'**
+  String durationMinutes(int minutes);
+
+  /// No description provided for @gratitudeCardSent.
+  ///
+  /// In ja, this message translates to:
+  /// **'感謝カードを送信しました'**
+  String get gratitudeCardSent;
+
+  /// No description provided for @urlOpenFailed.
+  ///
+  /// In ja, this message translates to:
+  /// **'URLを開けませんでした'**
+  String get urlOpenFailed;
+
+  /// No description provided for @alreadyJoinedHousehold.
+  ///
+  /// In ja, this message translates to:
+  /// **'既にこの世帯に参加しています'**
+  String get alreadyJoinedHousehold;
+
+  /// No description provided for @categoryCooking.
+  ///
+  /// In ja, this message translates to:
+  /// **'料理'**
+  String get categoryCooking;
+
+  /// No description provided for @categoryCleaning.
+  ///
+  /// In ja, this message translates to:
+  /// **'掃除'**
+  String get categoryCleaning;
+
+  /// No description provided for @categoryLaundry.
+  ///
+  /// In ja, this message translates to:
+  /// **'洗濯'**
+  String get categoryLaundry;
+
+  /// No description provided for @categoryDishes.
+  ///
+  /// In ja, this message translates to:
+  /// **'食器洗い'**
+  String get categoryDishes;
+
+  /// No description provided for @categoryShopping.
+  ///
+  /// In ja, this message translates to:
+  /// **'買い物'**
+  String get categoryShopping;
+
+  /// No description provided for @categoryChildcare.
+  ///
+  /// In ja, this message translates to:
+  /// **'育児'**
+  String get categoryChildcare;
 }
 
 class _AppLocalizationsDelegate

@@ -156,36 +156,55 @@ class _AuthScreenState extends State<AuthScreen> {
       await FirebaseAuth.instance.authStateChanges().firstWhere((u) => u != null);
       print('✅ Auth SignUp Completed: ${FirebaseAuth.instance.currentUser?.uid}');
 
-      // 2️⃣ 認証完了後に招待コード検索を実行
+      // 2️⃣ 認証完了後に招待コード検索を実行（inviteCodesコレクションを優先）
       print('🔥 招待コード検索開始: $inviteCode');
-      
-      final householdQuery = await FirebaseFirestore.instance
-          .collection('households')
-          .where('inviteCode', isEqualTo: inviteCode)
-          .limit(1)
+
+      String? householdId;
+
+      // まず inviteCodes コレクションで検索（正規ルート）
+      final inviteCodeDoc = await FirebaseFirestore.instance
+          .collection('inviteCodes')
+          .doc(inviteCode.toUpperCase())
           .get();
 
-      print('📊 検索結果件数: ${householdQuery.docs.length}');
-
-      if (householdQuery.docs.isEmpty) {
-        print('⚠️ 招待コードが見つかりません: $inviteCode');
-        _showSnackBar(l.authInviteNotFound, isError: true);
-        setState(() => _isLoading = false);
-        return;
+      if (inviteCodeDoc.exists) {
+        final inviteData = inviteCodeDoc.data()!;
+        final used = inviteData['used'] as bool? ?? false;
+        if (used) {
+          print('⚠️ 招待コードは既に使用されています: $inviteCode');
+          _showSnackBar(l.authInviteUsed, isError: true);
+          setState(() => _isLoading = false);
+          return;
+        }
+        householdId = inviteData['householdId'] as String?;
       }
 
-      final householdId = householdQuery.docs.first.id;
-      final householdData = householdQuery.docs.first.data();
-      
-      // 招待コードの有効性をチェック
-      final inviteActive = householdData['inviteActive'] as bool? ?? true;
-      if (!inviteActive) {
-        print('⚠️ 招待コードは既に使用されています: $inviteCode');
-        _showSnackBar(l.authInviteUsed, isError: true);
-        setState(() => _isLoading = false);
-        return;
+      // inviteCodesに無い場合はhouseholdsコレクションでフォールバック検索
+      if (householdId == null) {
+        final householdQuery = await FirebaseFirestore.instance
+            .collection('households')
+            .where('inviteCode', isEqualTo: inviteCode)
+            .limit(1)
+            .get();
+
+        if (householdQuery.docs.isEmpty) {
+          print('⚠️ 招待コードが見つかりません: $inviteCode');
+          _showSnackBar(l.authInviteNotFound, isError: true);
+          setState(() => _isLoading = false);
+          return;
+        }
+
+        householdId = householdQuery.docs.first.id;
+        final householdData = householdQuery.docs.first.data();
+        final inviteActive = householdData['inviteActive'] as bool? ?? true;
+        if (!inviteActive) {
+          print('⚠️ 招待コードは既に使用されています: $inviteCode');
+          _showSnackBar(l.authInviteUsed, isError: true);
+          setState(() => _isLoading = false);
+          return;
+        }
       }
-      
+
       print('✅ 招待コード確認: $inviteCode → householdId: $householdId');
 
       // Firebase AuthにdisplayNameを設定
@@ -236,8 +255,22 @@ class _AuthScreenState extends State<AuthScreen> {
           'inviteActive': false, // 招待コード無効化
         });
 
+        // inviteCodesコレクションも使用済みに更新
+        try {
+          await FirebaseFirestore.instance
+              .collection('inviteCodes')
+              .doc(inviteCode.toUpperCase())
+              .update({
+            'used': true,
+            'usedAt': FieldValue.serverTimestamp(),
+            'usedBy': user.uid,
+          });
+        } catch (_) {
+          // inviteCodesドキュメントが存在しない場合は無視
+        }
+
         print('✅ households/$householdId/members に追加完了');
-        print('🔒 招待コード無効化完了');
+        print('🔒 招待コード無効化完了（households.inviteActive + inviteCodes.used）');
       }
 
       // デフォルトテンプレートを作成（transaction外で実行、失敗しても登録は成功とする）

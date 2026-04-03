@@ -65,7 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('URLを開けませんでした: $e'),
+            content: Text('${l.urlOpenFailed}: $e'),
             backgroundColor: FamicaColors.error,
           ),
         );

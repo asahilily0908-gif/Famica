@@ -387,7 +387,7 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
     }
 
     return FutureBuilder<Map<String, String>>(
-      future: _getCategoryNames(),
+      future: _getCategoryNames(l),
       builder: (context, snapshot) {
         final categoryNames = snapshot.data ?? {};
         
@@ -406,16 +406,16 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
             if (!widget.isPartnerInvited)
               _buildPartnerInviteAnnouncement(l)
             else
-              _buildUserPieCard(
-                widget.partnerName,
-                widget.userBreakdownData.keys.firstWhere(
-                  (uid) => uid != user.uid,
-                  orElse: () => '',
+              if (widget.userBreakdownData.keys.any((uid) => uid != user.uid))
+                _buildUserPieCard(
+                  widget.partnerName,
+                  widget.userBreakdownData.keys.firstWhere(
+                    (uid) => uid != user.uid,
+                  ),
+                  categoryNames,
+                  const Color(0xFF4A90E2),
+                  l,
                 ),
-                categoryNames,
-                const Color(0xFF4A90E2),
-                l,
-              ),
           ],
         );
       },
@@ -616,19 +616,19 @@ class _SixMonthChartWidgetState extends State<SixMonthChartWidget> {
     return result;
   }
 
-  Future<Map<String, String>> _getCategoryNames() async {
+  Future<Map<String, String>> _getCategoryNames(AppLocalizations l) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return {};
 
       final defaultCategories = {
-        'cooking': '料理',
-        'cleaning': '掃除',
-        'laundry': '洗濯',
-        'dishes': '食器洗い',
-        'shopping': '買い物',
-        'childcare': '育児',
-        'other': 'その他',
+        'cooking': l.categoryCooking,
+        'cleaning': l.categoryCleaning,
+        'laundry': l.categoryLaundry,
+        'dishes': l.categoryDishes,
+        'shopping': l.categoryShopping,
+        'childcare': l.categoryChildcare,
+        'other': l.other,
       };
 
       final customSnapshot = await FirebaseFirestore.instance

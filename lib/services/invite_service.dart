@@ -209,6 +209,14 @@ class InviteService {
       final householdId = validation['householdId'] as String;
       print('householdId: $householdId');
 
+      // 自分のhouseholdに自分で参加しようとしていないかチェック
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      final currentHouseholdId = userDoc.data()?['householdId'] as String?;
+      if (currentHouseholdId == householdId) {
+        print('⚠️ 自分のhouseholdの招待コードです');
+        return {'success': false, 'error': 'self_join', 'message': '自分の世帯の招待コードです'};
+      }
+
       // トランザクションで招待コード使用済み化 + household参加を同時実行
       await _firestore.runTransaction((transaction) async {
         // inviteCodeドキュメントを再取得（トランザクション内で再チェック）
@@ -237,15 +245,9 @@ class InviteService {
         final householdData = householdDoc.data()!;
         final members = List<Map<String, dynamic>>.from(householdData['members'] ?? []);
 
-        // 既に参加済みかチェック
+        // 既に参加済みかチェック（コードを消費せずに終了）
         if (members.any((m) => m['uid'] == user.uid)) {
-          print('✅ 既に参加済みです');
-          // 既に参加済みの場合は招待コードを使用済みにする
-          transaction.update(inviteCodeRef, {
-            'used': true,
-            'usedAt': FieldValue.serverTimestamp(),
-            'usedBy': user.uid,
-          });
+          print('✅ 既に参加済みです（コードは消費しない）');
           return;
         }
 

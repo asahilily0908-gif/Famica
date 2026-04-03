@@ -55,32 +55,50 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
       String? inviteCode = inviteInfo?['inviteCode'];
       final householdId = inviteInfo?['householdId'];
 
-      if (householdId != null && (inviteCode == null || inviteCode.isEmpty || inviteCode.length != 6)) {
-        if (inviteCode != null && inviteCode.length != 6) {
-          print('⚠️ 招待コードが${inviteCode.length}桁のため6桁に再生成します');
-          // 古いinviteCodeドキュメントを削除
-          try {
-            await FirebaseFirestore.instance
-                .collection('inviteCodes')
-                .doc(inviteCode.toUpperCase())
-                .delete();
-          } catch (_) {}
+      if (householdId != null) {
+        bool needsRegeneration = false;
+        String? reason;
+
+        if (inviteCode == null || inviteCode.isEmpty) {
+          needsRegeneration = true;
+          reason = '招待コードが存在しない';
+        } else if (inviteCode.length != 6) {
+          needsRegeneration = true;
+          reason = '招待コードが${inviteCode.length}桁（6桁でない）';
         } else {
-          print('⚠️ 招待コードが存在しないため自動生成します');
+          // 使用済みチェック: inviteCodesコレクションのusedフィールドを確認
+          final validation = await _inviteService.validateInviteCode(inviteCode);
+          if (validation == null || validation.containsKey('error')) {
+            needsRegeneration = true;
+            reason = '招待コードが使用済みまたは無効';
+          }
         }
 
-        inviteCode = await _inviteService.generateUniqueInviteCode();
+        if (needsRegeneration) {
+          print('⚠️ $reason のため再生成します');
+          // 古いinviteCodeドキュメントを削除
+          if (inviteCode != null && inviteCode.isNotEmpty) {
+            try {
+              await FirebaseFirestore.instance
+                  .collection('inviteCodes')
+                  .doc(inviteCode.toUpperCase())
+                  .delete();
+            } catch (_) {}
+          }
 
-        // Firestoreに招待コードを保存
-        await FirebaseFirestore.instance
-            .collection('households')
-            .doc(householdId)
-            .update({'inviteCode': inviteCode});
+          inviteCode = await _inviteService.generateUniqueInviteCode();
 
-        // inviteCodesコレクションにもドキュメントを作成
-        await _inviteService.createInviteCodeDocument(inviteCode, householdId);
+          // Firestoreに招待コードを保存
+          await FirebaseFirestore.instance
+              .collection('households')
+              .doc(householdId)
+              .update({'inviteCode': inviteCode});
 
-        print('✅ 招待コード生成完了: $inviteCode');
+          // inviteCodesコレクションにもドキュメントを作成
+          await _inviteService.createInviteCodeDocument(inviteCode, householdId);
+
+          print('✅ 招待コード再生成完了: $inviteCode');
+        }
       }
 
       setState(() {

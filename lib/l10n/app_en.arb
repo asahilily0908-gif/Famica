@@ -265,5 +265,23 @@
   "sender": "Sender",
   "categoryLoadFailed": "Failed to load categories",
   "now": "Now",
-  "timeAgoJust": "Just now"
+  "timeAgoJust": "Just now",
+
+  "timeAgoDays": "{days}d ago",
+  "timeAgoHours": "{hours}h ago",
+  "timeAgoMinutes": "{minutes}m ago",
+
+  "totalHours": "{hours}h",
+  "durationMinutes": "{minutes} min",
+
+  "gratitudeCardSent": "Thank you card sent",
+  "urlOpenFailed": "Could not open URL",
+  "alreadyJoinedHousehold": "You are already a member of this household",
+
+  "categoryCooking": "Cooking",
+  "categoryCleaning": "Cleaning",
+  "categoryLaundry": "Laundry",
+  "categoryDishes": "Dishes",
+  "categoryShopping": "Shopping",
+  "categoryChildcare": "Childcare"
 }

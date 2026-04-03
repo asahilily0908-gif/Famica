@@ -1601,10 +1601,10 @@ class _ThanksCardDialogState extends State<_ThanksCardDialog> {
       debugPrint('✅ [Gratitude] 感謝を送信しました');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('💌 感謝カードを送信しました'),
+          SnackBar(
+            content: Text('💌 ${l.gratitudeCardSent}'),
             backgroundColor: UnifiedModalStyles.primaryPink,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
       }

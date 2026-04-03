@@ -239,7 +239,7 @@ class _RecordListScreenState extends State<RecordListScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '${(totalMinutes / 60).toStringAsFixed(1)}時間',
+                          l.totalHours((totalMinutes / 60).toStringAsFixed(1)),
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -393,7 +393,7 @@ class _RecordListScreenState extends State<RecordListScreen> {
                             Row(
                               children: [
                                 Text(
-                                  '$timeMinutes分',
+                                  l.durationMinutes(timeMinutes),
                                   style: const TextStyle(
                                     fontSize: 14,
                                     color: Color(0xFF555555),

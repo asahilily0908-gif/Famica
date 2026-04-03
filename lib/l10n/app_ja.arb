@@ -298,5 +298,38 @@
   "sender": "送信者",
   "categoryLoadFailed": "カテゴリの読み込みに失敗しました",
   "now": "今",
-  "timeAgoJust": "たった今"
+  "timeAgoJust": "たった今",
+
+  "timeAgoDays": "{days}日前",
+  "@timeAgoDays": {
+    "placeholders": { "days": {"type": "int"} }
+  },
+  "timeAgoHours": "{hours}時間前",
+  "@timeAgoHours": {
+    "placeholders": { "hours": {"type": "int"} }
+  },
+  "timeAgoMinutes": "{minutes}分前",
+  "@timeAgoMinutes": {
+    "placeholders": { "minutes": {"type": "int"} }
+  },
+
+  "totalHours": "{hours}時間",
+  "@totalHours": {
+    "placeholders": { "hours": {"type": "String"} }
+  },
+  "durationMinutes": "{minutes}分",
+  "@durationMinutes": {
+    "placeholders": { "minutes": {"type": "int"} }
+  },
+
+  "gratitudeCardSent": "感謝カードを送信しました",
+  "urlOpenFailed": "URLを開けませんでした",
+  "alreadyJoinedHousehold": "既にこの世帯に参加しています",
+
+  "categoryCooking": "料理",
+  "categoryCleaning": "掃除",
+  "categoryLaundry": "洗濯",
+  "categoryDishes": "食器洗い",
+  "categoryShopping": "買い物",
+  "categoryChildcare": "育児"
 }

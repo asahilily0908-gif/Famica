@@ -10,6 +10,7 @@ function getNotificationText(locale) {
   const texts = {
     ja: {
       taskTitle: (actorName, taskName) => `${actorName}さんが「${taskName}」を記録しました`,
+      taskBody: (timeMinutes) => timeMinutes ? `${timeMinutes}分` : '',
       costTitle: (actorName) => `${actorName}さんがコストを記録しました`,
       costBody: (purpose, amount) => `${purpose}: ¥${amount}`,
       letterTitle: (fromName) => `${fromName}さんからメッセージが届きました`,
@@ -18,6 +19,7 @@ function getNotificationText(locale) {
     },
     en: {
       taskTitle: (actorName, taskName) => `${actorName} recorded "${taskName}"`,
+      taskBody: (timeMinutes) => timeMinutes ? `${timeMinutes} min` : '',
       costTitle: (actorName) => `${actorName} recorded a cost`,
       costBody: (purpose, amount) => `${purpose}: ¥${amount}`,
       letterTitle: (fromName) => `You received a message from ${fromName}`,
@@ -26,6 +28,7 @@ function getNotificationText(locale) {
     },
     ko: {
       taskTitle: (actorName, taskName) => `${actorName}님이 "${taskName}"을(를) 기록했습니다`,
+      taskBody: (timeMinutes) => timeMinutes ? `${timeMinutes}분` : '',
       costTitle: (actorName) => `${actorName}님이 비용을 기록했습니다`,
       costBody: (purpose, amount) => `${purpose}: ¥${amount}`,
       letterTitle: (fromName) => `${fromName}님에게서 메시지가 도착했습니다`,
@@ -874,7 +877,7 @@ exports.notifyTaskCreated = functions.firestore
         const payload = {
           notification: {
             title: texts.taskTitle(actorName, data.task || data.category),
-            body: `${data.task || data.category}`,
+            body: texts.taskBody(data.timeMinutes),
           },
           data: {
             type: 'task',

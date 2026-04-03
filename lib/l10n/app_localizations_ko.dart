@@ -771,4 +771,56 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get timeAgoJust => '방금';
+
+  @override
+  String timeAgoDays(int days) {
+    return '$days일 전';
+  }
+
+  @override
+  String timeAgoHours(int hours) {
+    return '$hours시간 전';
+  }
+
+  @override
+  String timeAgoMinutes(int minutes) {
+    return '$minutes분 전';
+  }
+
+  @override
+  String totalHours(String hours) {
+    return '$hours시간';
+  }
+
+  @override
+  String durationMinutes(int minutes) {
+    return '$minutes분';
+  }
+
+  @override
+  String get gratitudeCardSent => '감사 카드를 보냈습니다';
+
+  @override
+  String get urlOpenFailed => 'URL을 열 수 없습니다';
+
+  @override
+  String get alreadyJoinedHousehold => '이미 이 가구의 구성원입니다';
+
+  @override
+  String get categoryCooking => '요리';
+
+  @override
+  String get categoryCleaning => '청소';
+
+  @override
+  String get categoryLaundry => '빨래';
+
+  @override
+  String get categoryDishes => '설거지';
+
+  @override
+  String get categoryShopping => '장보기';
+
+  @override
+  String get categoryChildcare => '육아';
 }

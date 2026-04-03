@@ -788,4 +788,57 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get timeAgoJust => 'Just now';
+
+  @override
+  String timeAgoDays(int days) {
+    return '${days}d ago';
+  }
+
+  @override
+  String timeAgoHours(int hours) {
+    return '${hours}h ago';
+  }
+
+  @override
+  String timeAgoMinutes(int minutes) {
+    return '${minutes}m ago';
+  }
+
+  @override
+  String totalHours(String hours) {
+    return '${hours}h';
+  }
+
+  @override
+  String durationMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get gratitudeCardSent => 'Thank you card sent';
+
+  @override
+  String get urlOpenFailed => 'Could not open URL';
+
+  @override
+  String get alreadyJoinedHousehold =>
+      'You are already a member of this household';
+
+  @override
+  String get categoryCooking => 'Cooking';
+
+  @override
+  String get categoryCleaning => 'Cleaning';
+
+  @override
+  String get categoryLaundry => 'Laundry';
+
+  @override
+  String get categoryDishes => 'Dishes';
+
+  @override
+  String get categoryShopping => 'Shopping';
+
+  @override
+  String get categoryChildcare => 'Childcare';
 }

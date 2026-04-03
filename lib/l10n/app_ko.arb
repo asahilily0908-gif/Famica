@@ -265,5 +265,23 @@
   "sender": "발신자",
   "categoryLoadFailed": "카테고리 로드에 실패했습니다",
   "now": "지금",
-  "timeAgoJust": "방금"
+  "timeAgoJust": "방금",
+
+  "timeAgoDays": "{days}일 전",
+  "timeAgoHours": "{hours}시간 전",
+  "timeAgoMinutes": "{minutes}분 전",
+
+  "totalHours": "{hours}시간",
+  "durationMinutes": "{minutes}분",
+
+  "gratitudeCardSent": "감사 카드를 보냈습니다",
+  "urlOpenFailed": "URL을 열 수 없습니다",
+  "alreadyJoinedHousehold": "이미 이 가구의 구성원입니다",
+
+  "categoryCooking": "요리",
+  "categoryCleaning": "청소",
+  "categoryLaundry": "빨래",
+  "categoryDishes": "설거지",
+  "categoryShopping": "장보기",
+  "categoryChildcare": "육아"
 }

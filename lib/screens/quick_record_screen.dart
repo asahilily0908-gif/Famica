@@ -522,11 +522,11 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
       final diff = now.difference(recordTime);
 
       if (diff.inDays > 0) {
-        timeAgo = '${diff.inDays}日前';
+        timeAgo = l.timeAgoDays(diff.inDays);
       } else if (diff.inHours > 0) {
-        timeAgo = '${diff.inHours}時間前';
+        timeAgo = l.timeAgoHours(diff.inHours);
       } else if (diff.inMinutes > 0) {
-        timeAgo = '${diff.inMinutes}分前';
+        timeAgo = l.timeAgoMinutes(diff.inMinutes);
       }
     }
 
@@ -595,13 +595,17 @@ class _QuickRecordScreenState extends State<QuickRecordScreen> {
               onPressed: hasThanked ? null : () async {
                 try {
                   // recordのmemberIdを取得して通知を送信
+                  final householdId = await _firestoreService.getCurrentUserHouseholdId();
+                  if (householdId == null) return;
+
                   final recordDoc = await FirebaseFirestore.instance
                       .collection('households')
-                      .doc(await _firestoreService.getCurrentUserHouseholdId())
+                      .doc(householdId)
                       .collection('records')
                       .doc(recordId)
                       .get();
 
+                  if (!recordDoc.exists) return;
                   final toUserId = recordDoc.data()?['memberId'] as String? ?? '';
 
                   await _firestoreService.addThanks(recordId, toUserId: toUserId);

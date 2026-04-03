@@ -282,14 +282,17 @@ class _AuthGateState extends ConsumerState<AuthGate> {
             _isInitialized = true;
             return const MainScreen();
           },
-          loading: () => const Scaffold(
+          // loading状態ではBuildContextからAppLocalizationsを取得できるが、
+          // constウィジェットとして構築するためローカライズ不可。
+          // ここは初回読み込み時の一瞬だけ表示されるため影響は軽微。
+          loading: () => Scaffold(
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(color: AppTheme.primaryPink),
-                  SizedBox(height: 16),
-                  Text('読み込み中...'),
+                  const CircularProgressIndicator(color: AppTheme.primaryPink),
+                  const SizedBox(height: 16),
+                  Text(l.loading),
                 ],
               ),
             ),

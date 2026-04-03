@@ -770,4 +770,56 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get timeAgoJust => 'たった今';
+
+  @override
+  String timeAgoDays(int days) {
+    return '$days日前';
+  }
+
+  @override
+  String timeAgoHours(int hours) {
+    return '$hours時間前';
+  }
+
+  @override
+  String timeAgoMinutes(int minutes) {
+    return '$minutes分前';
+  }
+
+  @override
+  String totalHours(String hours) {
+    return '$hours時間';
+  }
+
+  @override
+  String durationMinutes(int minutes) {
+    return '$minutes分';
+  }
+
+  @override
+  String get gratitudeCardSent => '感謝カードを送信しました';
+
+  @override
+  String get urlOpenFailed => 'URLを開けませんでした';
+
+  @override
+  String get alreadyJoinedHousehold => '既にこの世帯に参加しています';
+
+  @override
+  String get categoryCooking => '料理';
+
+  @override
+  String get categoryCleaning => '掃除';
+
+  @override
+  String get categoryLaundry => '洗濯';
+
+  @override
+  String get categoryDishes => '食器洗い';
+
+  @override
+  String get categoryShopping => '買い物';
+
+  @override
+  String get categoryChildcare => '育児';
 }
